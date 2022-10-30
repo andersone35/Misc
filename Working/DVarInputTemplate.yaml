@@ -1,0 +1,19 @@
+## Template for design Variable input file
+
+designVariables:
+    - category: ## density, elastic, thermalCond, thermalExp, specHeat, orientation, nodeCoord, nodeLoad, layup, beamSection
+      subCategory: ## modulus, shearModulus, poissonRatio, thermalExp, stiffnessMat, thickness, angle, zOffset, area, areaMoment, polarMoment, massMat, thermalCond, specHeat
+      layer: 1
+      component: 1
+      activeTime: start
+      ## or
+      activeTime: [start,end]
+      elementSet: setName
+      
+      nodeSet: setName
+	  
+      coefficients: (single value for all)
+      ## or
+      coefficients:
+          - c1
+          - c2

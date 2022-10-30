@@ -1,0 +1,122 @@
+## AStrO Commands
+
+*readModelInput: X
+    fileName:
+*readLoads:
+    fileName:
+*readConstraints:
+    fileName:
+*readInitialState: 
+    fileName:
+*readDesignVarInput: X
+    fileName:
+*readDesignVarValues: X
+    fileName:
+*readObjectiveInput: X
+    fileName:
+*readNodeResults: X
+    fileName:
+
+*solve: X
+    elastic: yes
+	thermal: no
+    nonLinearGeom: no
+	staticLoadTime:
+	dynamic: no
+	timeStep: 0.01
+	newmarkBeta:
+	newmarkGamma:
+	simPeriod:
+	saveSolnHist: no
+
+*modalAnalysis:
+    type: buckling
+    numModes: 10
+	
+*setDispToMode:
+    mode:
+    scaleFactor:
+
+*calcObjective:
+    staticLoadTime:
+	
+*calcObjGradient:
+    staticLoadTime:
+
+*writeNodeResults: X
+    fileName:
+	nodeSet:
+	fields:
+	    - temperature
+		- tdot
+	    - displacement
+		- velocity
+		- acceleration
+		- reactionForce
+		- reactionHeatGen
+	timeSteps: all
+	## or
+	timeSteps:
+	    - 1
+		- 3
+		- 7
+        - [10,100,10]
+
+*writeElementResults: X
+    fileName:
+	elementSet: 
+	fields:
+		- stress
+		- strain
+		- strainEnergyDen
+		- heatFlux
+		- tempGradient
+		- temperature
+		- shellDeformation
+		- shellForceMoment
+		- beamDeformation
+		- beamForceMoment
+	timeSteps: all
+	## or
+	timeSteps:
+	    - 1
+		- 3
+		- 7
+        - [10,100,10]
+		
+*writeModalResults:
+    fileName:
+	writeModes: yes
+
+*writeDesignVarValues: X
+    fileName:
+	include:
+        - category
+		- subCategory
+		- component
+		- layer
+		- nodeSet
+		- elementSet
+		- activeTime
+		
+*writeElementProperties:
+    fileName:
+	elementSet:
+	properties:
+	    - elastic
+		- thermalCond
+		...
+
+*writeObjective: X
+    fileName:
+	include:
+	    - category
+		- operator
+		- component
+		- layer
+		- coefficient
+		- exponent
+		- elementSet
+		- nodeSet
+		- activeTime
+	writeGradient: yes

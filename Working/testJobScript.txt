@@ -1,0 +1,9 @@
+*readModelInput:
+    fileName: shellBeamModelInput.yaml
+
+*readDesignVarInput:
+    fileName: shellBeamDVarInput.yaml
+	
+*readObjectiveInput:
+    fileName: shellBeamObjInput.yaml
+

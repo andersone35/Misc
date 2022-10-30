@@ -1,0 +1,107 @@
+## AStrO Model Input File Template
+nodes:
+    - [label, x, y, z]
+elements:
+    - type:
+      connectivity:
+          - [label, n1, n2, n3 ..]
+sets:
+    node:
+        - name:
+          labels: all
+          ## Or
+          labels:
+              - e1
+              - e2
+          #or
+          labels:
+              - [1, 10] # one thru 10...
+              - [20, 30] # 20 thru 30...
+    element:
+        - name:
+          labels: all
+          ## Or
+          labels:
+              - e1
+              - e2
+          #or
+          labels:
+              - [1, 10] # one thru 10...
+              - [20, 30] # 20 thru 30...
+sections:
+    - type: # solid, shell, beam
+      material: (material name)
+      orientation: [x1, x2, x3, xy1, xy2, xy3]
+      layup:
+          zOffset:
+          layers:
+              - [material, thickness, angle]
+      beamProps:
+          area:
+          I: [I2,I3,I22,I33,I23]
+          J:
+      ## Or
+          stiffness: [s11,s12,..]
+          mass: [m11,m12...]
+          expLoadCoef: [eL1, ... eL6]
+          conductivity: [k1]
+          specHeat: 
+      elementSet: setName
+materials:
+    - name:
+      density:
+      elastic:
+          E: [E11,E22,E33]
+          nu: [nu12,nu13,nu23]
+          G: [G12,G13,G23]
+          ## Or
+          stiffness: [C11,C12,...]
+      thermal:
+          conductivity: [k1,k2,k3,k12,k13,k23]
+          expansion: [e11,e22,e33,e12,e13,e23]
+          specHeat:
+      failure:
+          maxStress:
+              tensile: [s11,s22,s33]
+              compressive: [s11,s22,s33]
+              shear: [s12,s13,s23]
+          maxStrain:
+              tensile:
+              compressive:
+              shear:
+          maxStrainEnergy: (value)
+          maxMises: (value)
+constraints:
+    matrix:
+        - [eqn, node, dof, coef]
+    rhs:
+        - r1
+        - r2
+loads:
+    - type:  nodal, bodyForce, gravitational, centrifugal, surfacePressure, surfaceTraction, bodyHeatGen, surfaceFlux
+      activeTime: [start, end]
+      ##or
+      activeTime: start
+      setLoads:
+          - [nd,fx,fy,fz,mx,my,mz,Q]
+          ## or
+          - [el,fx,fy,fz,mx,my,mz,Q]
+          ## or
+          - [el,ax,ay,az]
+          ## or
+          - [el,cx,cy,cz,rax,ray,raz,omega]
+          ## or
+          - [el,nx,ny,nz,thetaTol,p]
+          ## or
+          - [el,nx,ny,nz,thetaTol,tx,ty,tz]
+          ## or
+          - [el,Q]
+          ## or
+          - [el,nx,ny,nz,thetaTol,f]
+initialState:
+    displacement:
+        - [nd,Ux,Uy,Yz,Rx,Ry,Rz]
+    velocity:
+        - [nd,Vx,Vy,Vz,VRx,VRy,VRz]
+    acceleration:
+        - [nd,Ax,Ay,Az,ARx,ARy,ARz]

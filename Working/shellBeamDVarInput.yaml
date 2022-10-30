@@ -1,0 +1,12 @@
+designVariables:
+    - category: layup
+      subCategory: thickness
+      layer: 1
+      elementSet: allEls
+      coefficients: 1.0
+    - category: layup
+      subCategory: modulus
+      layer: 1
+      component: 1
+      elementSet: allEls
+      coefficients: 2.0
