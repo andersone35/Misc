@@ -118,6 +118,10 @@ module AStrO_globalData
 	real*8, allocatable :: intElasticLoad(:)
 	real*8, allocatable :: thermalLoad(:)
 	
+	real*8, allocatable :: eigenModes(:,:)
+	real*8, allocatable :: eigenVals(:)
+	real*8, allocatable :: diagMassMat(:)
+	
 	real*8, allocatable :: elasticMat(:)
 	integer, allocatable :: elMatCols(:)
 	integer, allocatable :: elMatRange(:)
@@ -184,6 +188,7 @@ module AStrO_globalData
 	integer :: nLGeom, dynamic, writeSolnHist, numTSteps
 	real*8 :: nMBeta, nMGamma, delT, simPeriod, rayCoefK, rayCoefM
 	real*8 :: loadTime
+	integer :: numEigModes, modalType
 	
 !! Job utilities
 

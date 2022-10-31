@@ -1173,6 +1173,17 @@ module AStrO_bookKeeping
 		
 	end subroutine deallocateObjectiveData
 	
+	subroutine deallocateModalData()
+	    implicit none
+		
+		if(allocated(eigenModes)) then
+	        deallocate(eigenModes)
+	        deallocate(eigenVals)
+	        deallocate(diagMassMat)
+	    endif
+	
+	end subroutine deallocateModalData
+	
 	subroutine deallocateAnalysisData()
 	    implicit none
 
@@ -1266,6 +1277,7 @@ module AStrO_bookKeeping
 		call deallocateDesignVarData()
 		call deallocateObjectiveData()
 		call deallocateAnalysisData()
+		call deallocateModalData()
 		
 	end subroutine deallocateAll
 

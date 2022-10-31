@@ -565,6 +565,64 @@ module AStrO_commandFunctions
 		
 	end subroutine scaleElasticMPC
 	
+	subroutine getDiagMassMat()
+	    implicit none
+		
+		integer :: numNds, dofPerNd, numIntDof, numIntPts
+		integer :: dofTable(2,33)
+		real*8 :: intPts(3,8), ipWt(8)
+		real*8 :: locNds(3,10), globNds(3,10), orient(3,3), cMat(6,6), den, tExp(6), tCond(3,3), sHeat
+		real*8 :: ABD(9,9), sMass(6,6), sTELd(6), stCond(3,3), ssHeat
+		real*8 :: bStiff(6,6), bMass(6,6), bTELd(6), btCond(3,3), bsHeat
+		real*8 :: temp(10), Tdot(10), pTemp(10), pTdot(10)
+		real*8 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)		
+		
+		integer :: eType
+		real*8 :: Rum(33), dRdA(33,33)
+		real*8 :: statRot(3), statInOri(3,48), statdrIdrG(3,16)
+		real*8 :: nnInv
+		integer :: i1, i2, i3, i4, i5, i6
+
+        if(.not. allocated(diagMassMat)) then
+		    allocate(diagMassMat(elMatDim))
+		endif
+
+        diagMassMat(:) = r_0		
+		do i1 = 1, numEls
+		    call r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
+				locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, & 
+				ABD, sMass, sTELd, stCond, ssHeat, &
+				bStiff, bMass, bTELd, btCond, bsHeat, &
+				temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
+			eType = elementType(i1)
+			statRot(:) = r_0
+			do i2 = 1, numNds
+			    statRot(:) = statRot(:) + disp(4:6,i2)
+			enddo
+			nnInv = numNds
+			statRot(:) = (r_1/nnInv)*statRot(:)
+			call r_getInstOrient(statInOri,statdrIdrG,orient,statRot)
+			statInOri(:,4:48) = r_0
+			statdrIdrG(:,4:16) = r_0
+			acc(:,:) = r_0
+			i3 = numNds*dofPerNd
+			do i2 = 1, i3
+			    i4 = dofTable(1,i2)
+				i5 = dofTable(2,i2)
+				acc(i4,i5) = r_1
+			enddo
+		    call r_getElRum(Rum,dRdA,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
+	            locNds, globNds, orient, statInOri, statdrIdrG, statRot, den, sMass, bMass, disp, acc)
+			do i2 = 1, i3
+			    i4 = dofTable(1,i2)
+				i5 = dofTable(2,i2)
+				i6 = nDofIndex(i4,i5)
+				diagMassMat(i6) = diagMassMat(i6) + Rum(i2)
+			enddo
+		enddo
+		
+	end subroutine getDiagMassMat
+	
 	subroutine updateExternalRHS(extVec,extDim,intVec,intDim)
 	    implicit none
 		
