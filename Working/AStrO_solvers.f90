@@ -39,41 +39,42 @@ contains
 			i3 = ARange(i1) !i3 = index in ALTri of diagonal term in row i1
 			i2 = ARange(i1-1) + 1  !i2 = index in ALTri of starting term in row i1
 				!Calculate the product of the i1 row of ALTri with the corresponding diagonal terms
-				i5 = maxBW
-				i6 = i1 - 1
-				do i4 = i3 - 1, i2, -1
-					dLprod(i5) = diagvec(i6)*ALTri(i4)
-					i5 = i5 - 1
-			i6 = i6 - 1
-				enddo
+			i5 = maxBW
+			i6 = i1 - 1
+			do i4 = i3 - 1, i2, -1
+				dLprod(i5) = diagvec(i6)*ALTri(i4)
+				i5 = i5 - 1
+			    i6 = i6 - 1
+			enddo
 				!Calculate the diagonal term of row i1, storing diagvec/ALTri
-				i5 = i1 - i3 + i2  !i5 = current column in [A], corresponding to i4
-				diag = ALTri(i3)
+			i5 = i1 - i3 + i2  !i5 = current column in [A], corresponding to i4
+			diag = ALTri(i3)
 			do i4 = i2, i3-1
-					diag = diag - diagvec(i5)*ALTri(i4)*ALTri(i4)
-					i5 = i5 + 1
-				enddo
-				diagvec(i1) = diag
+				diag = diag - diagvec(i5)*ALTri(i4)*ALTri(i4)
+				i5 = i5 + 1
+			enddo
+			diagvec(i1) = diag
 			ALTri(i3) = diag
-				fact = r_1/diag
+			fact = r_1/diag
 			imax = min(n, i1+maxBW)
 			do i2 = i1+1, imax
-			stCol = max(rowStCol(i1),rowStCol(i2))
-			rowLen = i1 - stCol
-			if(rowLen .ge. 0) then
-						i3 = maxBW - rowLen + 1 !Start index of dLprod
-				i4 = ARange(i2) - (i2 - stCol) !Start index of row 2
-				i5 = i4 + rowLen !Index of ALTri value being computed
-						diag = ALTri(i5)
-						do i6 = 0, rowLen - 1
-							diag = diag - dLprod(i3+i6)*ALTri(i4+i6)
-						enddo
-						ALTri(i5) = diag*fact
-			endif
+				stCol = max(rowStCol(i1),rowStCol(i2))
+				rowLen = i1 - stCol
+				if(rowLen .ge. 0) then
+					i3 = maxBW - rowLen + 1 !Start index of dLprod
+					i4 = ARange(i2) - (i2 - stCol) !Start index of row 2
+					i5 = i4 + rowLen !Index of ALTri value being computed
+					diag = ALTri(i5)
+					do i6 = 0, rowLen - 1
+						diag = diag - dLprod(i3+i6)*ALTri(i4+i6)
+					enddo
+					ALTri(i5) = diag*fact
+				endif
 			enddo
 		enddo
 
 		deallocate(rowStCol,diagvec,dLprod)
+		
 		return
     end subroutine getSparseLDLFact
 

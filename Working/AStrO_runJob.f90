@@ -15,13 +15,12 @@ program AStrO_runJob
 	use AStrO_commandFunctions
     implicit none
 	
-	integer, allocatable :: allNdSet(:), allElSet(:), writeTSteps(:)
-	
 	character(len=256) :: fileLine
 	character(len=128) :: jobScriptName, inputFileName, outputFileName, fullFileName
-	character(len=64) :: writeFields(10)
-	character(len=16) :: extension, stepStr
+	character(len=16) :: fields(10)
 	real*8 :: time
+	real*8 :: scaleFactor
+	integer :: numFields, writeGrad, setDispMode, writeModes
 	integer :: readInt(3), errFlag
 	integer :: i1, i2, i3, i4, i5, i6, i7, iosVal, bw3, nnd2, readModel, nSInd, eSInd, numFields
 	
@@ -45,59 +44,9 @@ program AStrO_runJob
 	    !!write(*,*) 'Loop start fileLine : ', fileLine
 	    i1 = index(fileLine,'*')
 		if(i1 .gt. 0) then
-			if(fileLine(i1:i1+14) .eq. '*readModelInput') then
-				read(8,'(A)',iostat=iosVal) fileLine(16:256)
+		    if(fileLine(i1:i1+4) .eq. '*read') then
+			    call processReadCommand(8,fileLine,iosVal)
 				i1 = index(fileLine,'*')
-				do while(i1 .eq. 0 .and. iosVal .eq. 0)
-					i2 = index(fileLine,':')
-					if(i2 .gt. 0) then
-						if(fileLine(i2-8:i2) .eq. 'fileName:') then
-							read(fileLine(i2+1:i2+128),*) inputFileName
-							write(lfUnit,*) 'reading model input, file: ', inputFileName
-							call readModelInput(inputFileName)
-							readModel = 1
-						endif
-					endif
-					read(8,'(A)',iostat=iosVal) fileLine(16:256)
-					i1 = index(fileLine,'*')
-				enddo
-				outputFileName = 'modelDataEcho.txt'
-				call writeModelData(outputFileName)
-			elseif(fileLine(i1:i1+18) .eq. '*readDesignVarInput') then
-				read(8,'(A)',iostat=iosVal) fileLine(16:256)
-				i1 = index(fileLine,'*')
-				do while(i1 .eq. 0 .and. iosVal .eq. 0)
-					i2 = index(fileLine,':')
-					if(i2 .gt. 0) then
-						if(fileLine(i2-8:i2) .eq. 'fileName:') then
-							read(fileLine(i2+1:i2+128),*) inputFileName
-							write(lfUnit,*) 'reading design variable input, file: ', inputFileName
-							call readDesignVarInput(inputFileName)
-						endif
-					endif
-					read(8,'(A)',iostat=iosVal) fileLine(16:256)
-					i1 = index(fileLine,'*')
-				enddo
-				outputFileName = 'dVarDataEcho.txt'
-				call writeDesignVarData(outputFileName)
-			elseif(fileLine(i1:i1+18) .eq. '*readObjectiveInput') then
-			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
-				i1 = index(fileLine,'*')
-				do while(i1 .eq. 0 .and. iosVal .eq. 0)
-					i2 = index(fileLine,':')
-					if(i2 .gt. 0) then
-						if(fileLine(i2-8:i2) .eq. 'fileName:') then
-							read(fileLine(i2+1:i2+128),*) inputFileName
-							write(lfUnit,*) 'reading objective input, file: ', inputFileName
-							call readObjectiveInput(inputFileName)
-						endif
-					endif
-					read(8,'(A)',iostat=iosVal) fileLine(16:256)
-					i1 = index(fileLine,'*')
-				enddo
-				call getdToElComp()
-				outputFileName = 'objectiveEcho.txt'
-				call writeObjectiveData(outputFileName)
 			elseif(fileLine(i1:i1+5) .eq. '*solve') then
 			    if(readModel .eq. 0) then
 				    write(lfUnit,*) 'Error: *solve command called before model input file read in.'
@@ -192,31 +141,139 @@ program AStrO_runJob
 				enddo
 				call solve()
 114             numNodes = numNodes
-            elseif(fileLine(i1:16) .eq. '*writeNodeResults') then
+            elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
+			    modalType = 0 !! 0 = buckling, 1 = vibration
+				numEigModes = 10
 			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
 				i1 = index(fileLine,'*')
-				nSInd = 0
 				do while(i1 .eq. 0 .and. iosVal .eq. 0)
-					i2 = index(fileLine,':')
+				    i2 = index(fileLine,':')
 					if(i2 .gt. 0) then
-						if(fileLine(i2-8:i2) .eq. 'fileName:') then
-							read(fileLine(i2+1:i2+128),*) outputFileName
+					    if(fileLine(i2-8:i2) .eq. 'numModes:') then
+						    read(fileLine(i2+1:i2+64),*) numEigModes
 							read(8,'(A)',iostat=iosVal) fileLine(16:256)
-							i1 = index(fileLine,'*')
-						elseif(fileLine(i2-7:i2) .eq. 'nodeSet:') then
-						    do i3 = 1, numNdSets
-							    i4 = index(fileLine,ndSetName(i3))
-							    if(i4 .gt. 0) then
-								    nSInd = i3
-								endif
-							enddo
-							if(nSInd .eq. 0) then
-							    write(lfUnit,*) 'Warning: no node set named ', fileLine(i2+1:i2+64), 'was found'
-								write(lfUnit,*) 'Writing results for all nodes'
+				            i1 = index(fileLine,'*')
+						elseif(fileLine(i2-4:i2) .eq. 'type:') then
+						    i3 = index(fileLine,'vibration')
+							if(i3 .gt. 0) then
+							    modalType = 1
 							endif
 							read(8,'(A)',iostat=iosVal) fileLine(16:256)
-							i1 = index(fileLine,'*')
-						elseif(fileLine(i2-6:i2) .eq. 'fields:') then
+				            i1 = index(fileLine,'*')
+						else
+						    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						endif
+					else
+						read(8,'(A)',iostat=iosVal) fileLine(16:256)
+						i1 = index(fileLine,'*')
+					endif
+				enddo
+				allocate(eigenModes(elMatDim,numEigModes))
+	            allocate(eigenVals(numEigModes))
+				allocate(eigenFactors(numEigModes))
+	            allocate(diagMassMat(elMatDim))
+				i3 = dynamic
+				dynamic = 0
+				call getElasticSolnLoad(1)
+				dynamic = i3
+				if(modalType .eq. 1) then
+					call getDiagMassMat()
+					do i3 = 1, elMatDim
+						diagMassMat(i3) = r_1/diagMassMat(i3)
+					enddo
+				else
+				    diagMassMat(:) = r_1
+				endif
+				call getSparseEigenModes(eigenModes,eigenVals,numEigModes,elMatDim,elasticMat,elMatCols,elMatRange,elMatSize, &
+				    diagMassMat,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCDim,elMPCSize)
+				if(modalType .eq. 0) then
+				    call getBucklingLoadFactors(eigenFactors,numEigModes)
+				else
+				    do i3 = 1, numEigModes
+					    eigenFactors(i3) = r_p5*sqrt(eigenVals(i3))/r_pi
+					enddo
+				endif
+			elseif(fileLine(i1:i1+13) .eq. '*setDispToMode') then
+			    scaleFactor = 0.01d0
+			    setDispMode = 1
+			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				i1 = index(fileLine,'*')
+				do while(i1 .eq. 0 .and. iosVal .eq. 0)
+				    i2 = index(fileLine,':')
+					if(i2 .gt. 0) then
+					    if(fileLine(i2-4:i2) .eq. 'mode:') then
+						    read(fileLine(i2+1:i2+64),*) setDispMode
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						elseif(fileLine(i2-11:i2) .eq. 'scaleFactor:') then
+						    read(fileLine(i2+1:i2+64),*) scaleFactor
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						else
+						    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						endif
+					else
+					    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				        i1 = index(fileLine,'*')
+					endif
+				enddo
+				call setSolnToMode(nodeDisp,elMatDim,setDispMode,scaleFactor)
+			elseif(fileLine(i1:i1+13) .eq. '*calcObjective') then
+			    call getCompleteObjective()
+			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				i1 = index(fileLine,'*')
+			elseif(fileLine(i1:i1+15) .eq. '*calcObjGradient') then
+			    call getTotaldLdD()
+			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				i1 = index(fileLine,'*')
+            elseif(fileLine(i1:i1+16) .eq. '*writeNodeResults' .or. fileLine(i1:i1+19) .eq. '*writeElementResults') then
+                call processWriteNodeEl(8,fileLine,iosVal)
+				i1 = index(fileLine,'*')
+			elseif(fileLine(i1:i1+17) .eq. '*writeModalResults') then
+			    writeModes = 1
+			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				i1 = index(fileLine,'*')
+				do while(i1 .eq. 0 .and. iosVal .eq. 0)
+				    i2 = index(fileLine,':')
+					if(i2 .gt. 0) then
+					    if(fileLine(i2-8:i2) .eq. 'fileName:') then
+						    read(fileLine(i2+1:i2+128),*) outputFileName
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						elseif(fileLine(i2-10:i2) .eq. 'writeModes:') then
+						    i2 = index(fileLine,'no')
+							if(i2 .gt. 1) then
+							    writeModes = 0
+							endif
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						else
+						    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						endif
+					else
+					    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				        i1 = index(fileLine,'*')
+					endif
+				enddo
+				call writeModalResults(outputFileName,writeModes)
+			elseif(fileLine(i1:i1+20) .eq. '*writeNodeCoordinates' .or. fileLine(i1:i1+22) .eq. '*writeElementProperties') then
+			    call processWriteNdElProps(8,fileLine,iosVal)
+				i1 = index(fileLine,'*')
+			elseif(fileLine(i1:i1+14) .eq. '*writeObjective') then
+			    writeGrad = 1
+			    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				i1 = index(fileLine,'*')
+				do while(i1 .eq. 0 .and. iosVal .eq. 0)
+				    i2 = index(fileLine,':')
+					if(i2 .gt. 0) then
+					    if(fileLine(i2-8:i2) .eq. 'fileName:') then
+						    read(fileLine(i2+1:i2+128),*) outputFileName
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
+						elseif(fileLine(i2-7:i2) .eq. 'include:') then
 						    read(8,'(A)',iostat=iosVal) fileLine(16:256)
 							i2 = index(fileLine,':')
 							numFields = 0
@@ -224,147 +281,29 @@ program AStrO_runJob
 							    i3 = index(fileLine,'-')
 								if(i3 .gt. 0) then
 								    numFields = numFields + 1
-								    read(fileLine(i3+1:i3+64),*) writeFields(numFields)
-									if(writeFields(numFields) .eq. 'reactionForce') then
-									    elasticLoad(:) = r_0
-										if(intVecSize .gt. 0) then
-										    intElasticLoad(:) = r_0
-										endif
-									    call getElasticSolnLoad(0)
-									endif
-									if(writeFields(numFields) .eq. 'reactionHeatGen') then
-									    thermalLoad(:) = r_0
-										call getThermalSolnLoad(0)
-									endif
+									read(fileLine(i3+1:i3+15),*) fields(numFields)
 								endif
 								read(8,'(A)',iostat=iosVal) fileLine(16:256)
-								i2 = index(fileLine,':')
+							    i2 = index(fileLine,':')
 							enddo
 							i1 = index(fileLine,'*')
-						elseif(fileLine(i2-9:i2) .eq. 'timeSteps:') then
-						    if(numTSteps .le. 0) then
-							    write(lfUnit,*) 'Error: A dynamic analysis must be run prior to writing time step dependent results.'
-								write(lfUnit,*) 'Aborting writeNodeResults'
-								goto 251
-							endif
-						    if(.not. allocated(writeTSteps)) then
-							    allocate(writeTSteps(numTSteps))
-							endif
-							writeTSteps(:) = 0
-						    i3 = index(fileLine,'all')
+						elseif(fileLine(i2-13:i2) .eq. 'writeGradient:') then
+						    i3 = index(fileLine,'no')
 							if(i3 .gt. 0) then
-							    writeTSteps(:) = 1
-							else
-							    read(8,'(A)',iostat=iosVal) fileLine(16:256)
-								i2 = index(fileLine,':')
-								do while(i2 .eq. 0 .and. iosVal .eq. 0)
-									i3 = index(fileLine, '-')
-									if(i3 .gt. 0) then
-										i4 = index(fileLine,'[')
-										if(i4 .gt. 0) then
-											i5 = index(fileLine,']')
-											readInt(3) = 1
-											read(fileLine(i4+1:i5-1),*,end=254) readInt(1:3)
-254                                         do i6 = readInt(1), readInt(2), readInt(3)
-                                                if(i6 .le. numTSteps .and. i6 .gt. 0) then
-												    writeTSteps(i6) = 1
-												else
-												    write(lfUnit,*) 'Error: a time step specified for writeNodeResults is out of'
-													write(lfUnit,*) 'the simulated range.  Aborting writeNodeResults.'
-													goto 251
-												endif
-                                            enddo
-										else
-										    read(fileLine(i3+1:i3+64),*) i5
-											if(i5 .le. numTSteps .and. i5 .gt. 0) then
-											    writeTSteps(i5) = 1
-											else
-											    write(lfUnit,*) 'Error: a time step specified for writeNodeResults is out of'
-												write(lfUnit,*) 'the simulated range.  Aborting writeNodeResults.'
-											    goto 251
-											endif
-										endif
-									endif
-									read(8,'(A)',iostat=iosVal) fileLine(16:256)
-								    i2 = index(fileLine,':')
-								enddo
+							    writeGrad = 0
 							endif
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				            i1 = index(fileLine,'*')
 						else
 						    read(8,'(A)',iostat=iosVal) fileLine(16:256)
-							i1 = index(fileLine,'*')
+				            i1 = index(fileLine,'*')
 						endif
+					else
+					    read(8,'(A)',iostat=iosVal) fileLine(16:256)
+				        i1 = index(fileLine,'*')
 					endif
 				enddo
-				if(.not. allocated(writeTSteps)) then
-				    if(nSInd .eq. 0) then
-					    if(.not. allocated(allNdSet)) then
-						    allocate(allNdSet(numNodes))
-						endif
-						do i3 = 1, numNodes
-							allNdSet(i3) = i3
-						enddo
-						time = numTSteps*delT
-						call writeNodeResults(outputFileName,writeFields,numFields,allNdSet,numNodes,time,numTSteps)
-					else
-					    i3 = ndSetRange(nSInd-1) + 1
-						i4 = ndSetRange(nSInd)
-						i5 = i4 - i3 + 1
-						time = numTSteps*delT
-						call writeNodeResults(outputFileName,writeFields,numFields,nodeSets(i3:i4),i5,time,numTSteps)
-					endif
-				else
-				    do i6 = 1, numTSteps
-					    if(writeTSteps(i6) .eq. 1) then
-						    call readBinarySolution(i6,errFlag)
-							if(errFlag .eq. 0) then
-							    nodeTemp = prevTemp(:)
-								nodeTdot = prevTdot(:)
-								nodeDisp = prevDisp(:)
-								if(intVecSize .ge. 1) then
-									internalDisp(:) = prevIntDisp(:)
-								endif
-								nodeVel(:) = prevVel(:)
-								nodeAcc(:) = prevAcc(:)
-								write(stepStr,'(I0)') i6
-								i7 = index(outputFileName,'.')
-								if(i7 .gt. 0) then
-									read(outputFileName(i7:i7+15),*) extension
-									read(outputFileName(1:i7-1),*) fullFileName
-									outputFileName = fullFileName
-								else
-									extension = ''
-								endif
-								fullFileName = outputFileName // '_step' // stepStr // extension
-								if(nSInd .eq. 0) then
-									if(.not. allocated(allNdSet)) then
-										allocate(allNdSet(numNodes))
-									endif
-									do i3 = 1, numNodes
-										allNdSet(i3) = i3
-									enddo
-									time = numTSteps*delT
-									call writeNodeResults(fullFileName,writeFields,numFields,allNdSet,numNodes,time,numTSteps)
-								else
-									i3 = ndSetRange(nSInd-1) + 1
-									i4 = ndSetRange(nSInd)
-									i5 = i4 - i3 + 1
-									time = numTSteps*delT
-									call writeNodeResults(fullFileName,writeFields,numFields,nodeSets(i3:i4),i5,time,numTSteps)
-								endif
-							else
-							    write(lfUnit,*) 'Error: time step ', i6, ' was never recorded in the solution history.'
-								write(lfUnit,*) 'Be sure to set the saveSolnHist option to yes under the *solve command'
-								write(lfUnit,*) 'if the objective gradient or time-specific intermediate results are desired'
-								write(lfUnit,*) 'for a dynamic analysis.'
-							endif
-						endif
-					enddo
-					deallocate(writeTSteps)
-				endif
-				if(allocated(allNdSet)) then
-				    deallocate(allNdSet)
-				endif
-251				i1 = index(fileLine,'*')
+				call writeObjective(outputFileName,fields,numFields,writeGrad)
 			else
 				read(8,'(A)',iostat=iosVal) fileLine(16:256)
 				i1 = index(fileLine,'*')

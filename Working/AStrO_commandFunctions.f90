@@ -736,6 +736,127 @@ module AStrO_commandFunctions
 		
 	end subroutine loadInitialState
 	
+	subroutine getModelDimension(modDim)
+	    implicit none
+		
+		real*8, intent(out) :: modDim
+		
+		real*8 :: xMin, xMax, yMin, yMax, zMin, zMax
+		real*8 :: xLen, yLen, zLen, md2
+		real*8 :: ndCrd(3)
+		integer :: i1, i2, i3, i4
+		
+		xMin = 1e+100_8
+		yMin = xMin
+		zMin = xMin
+		xMax = -xMin
+		yMax = xMax
+		zMax = xMax
+		
+		do i1 = 1, numNodes
+		    ndCrd(:) = nodeList(:,i1)
+			do i2 = ndToDRange(i1-1)+1, ndToDRange(i1)
+				i3 = ndToD(i2)
+				if(dCategory(i3) .eq. 'nodeCoord') then
+					i4 = dComponent(i3)
+					ndCrd(i4) = ndCrd(i4) + ndToCoef(i2)*r_dVec(i3)
+				endif
+			enddo
+			if(ndCrd(1) .gt. xMax) then
+			    xMax = ndCrd(1)
+			endif
+			if(ndCrd(1) .lt. xMin) then
+			    xMin = ndCrd(1)
+			endif
+			if(ndCrd(2) .gt. yMax) then
+			    yMax = ndCrd(2)
+			endif
+			if(ndCrd(2) .lt. yMin) then
+			    yMin = ndCrd(2)
+			endif
+			if(ndCrd(3) .gt. zMax) then
+			    zMax = ndCrd(3)
+			endif
+			if(ndCrd(3) .lt. zMin) then
+			    zMin = ndCrd(3)
+			endif
+		enddo
+		
+		xLen = xMax - xMin
+		yLen = yMax - yMin
+		zLen = zMax - zMin
+		
+		md2 = xLen*xLen + yLen*yLen + zLen*zLen
+		modDim = sqrt(md2)
+		
+	end subroutine getModelDimension
+	
+	subroutine setSolnToMode(solnVec,sVdim,modeNum,scaleFact)
+	    implicit none
+		
+		integer, intent(in) :: modeNum, sVdim
+		real*8, intent(in) :: scaleFact
+		real*8, intent(out) :: solnVec(sVdim)
+		
+		real*8 :: modDim, eVMax, multFact, absVi
+		integer :: i1, i2
+		
+		call getModelDimension(modDim)
+		
+		eVMax = r_0
+		do i1 = 1, sVdim
+		    absVi = abs(eigenModes(i1,modeNum))
+		    if(absVi .gt. eVMax) then
+			    eVMax = absVi
+			endif
+		enddo
+		
+		multFact = scaleFact*modDim/eVMax
+		
+		solnVec(:) = multFact*eigenModes(:,modeNum)
+		
+	end subroutine setSolnToMode
+	
+	subroutine getBucklingLoadFactors(bFact,numFact)
+	    implicit none
+		
+		integer, intent(in) :: numFact
+		real*8, intent(out) :: bFact(numFact)
+		
+		real*8, allocatable :: Ruk(:)
+		real*8 :: numer, denom
+		integer :: i1, i2, dynCopy
+		
+		allocate(Ruk(elMatDim))
+		
+		dynCopy = dynamic
+		dynamic = 0
+		elasticLoad(:) = r_0
+		call getElasticSolnLoad(0)
+		Ruk(:) = -elasticLoad(:)
+		
+		elasticLoad(:) = r_0
+		call getElasticAppliedLoad(loadTime)
+		
+		do i1 = 1, numFact
+		    numer = r_0
+			denom = r_0
+			do i2 = 1, elMatDim
+			    numer = numer + Ruk(i2)*eigenModes(i2,i1)
+				denom = denom + elasticLoad(i2)*eigenModes(i2,i1)
+			enddo
+			if(abs(denom) .gt. r_0) then
+			    bFact(i1) = numer/denom
+			else
+			    bFact(i1) = 1e+100_8
+			endif
+		enddo
+		
+		dynamic = dynCopy
+		deallocate(Ruk)
+		
+	end subroutine getBucklingLoadFactors
+	
 	subroutine stepSolve(time)
 	    implicit none
 		
@@ -873,6 +994,46 @@ module AStrO_commandFunctions
 		endif
 		
 	end subroutine solve
+	
+	subroutine getCompleteObjective()
+	    implicit none
+		
+		real*8 :: time
+		integer :: i1, i2, i3
+		
+		objVal = r_0
+		
+		if(dynamic .eq. 0) then
+		    call getObjective(loadTime)
+		else
+		    i1 = numTSteps
+		    call readBinarySolution(numTSteps,errFlag)
+			if(errFlag .eq. 1) then
+			    goto 896
+			endif
+			do i1 = numTSteps-1, 0, -1
+			    nodeTemp(:) = prevTemp(:)
+				nodeTdot(:) = prevTdot(:)
+			    nodeDisp(:) = prevDisp(:)
+				if(intVecSize .gt. 0) then
+				    internalDisp(:) = prevIntDisp(:)
+				endif
+				nodeVel(:) = prevVel(:)
+				nodeAcc(:) = prevAcc(:)
+				readBinarySolution(i1,errFlag)
+				if(errFlag .eq. 1) then
+				   goto 896
+				endif
+				time = delT*(i1+1)
+				call getObjective(time)
+			enddo
+			return
+896			write(lfUnit,*) 'Error: could not read the solution history file for time step ', i1
+			write(lfUnit,*) 'Be sure to run a dynamic analysis with *solve with the saveSolnHistory option set to yes'
+			write(lfUnit,*) 'if objective and sensitivities are desired for dynamic problems.'
+		endif
+		
+	end subroutine getCompleteObjective
 	
 	subroutine augmentdLdu()
 	    implicit none

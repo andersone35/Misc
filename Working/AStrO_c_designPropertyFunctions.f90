@@ -24,7 +24,7 @@ module AStrO_c_designPropertyFunctions
 		if(abs(stiffMat(1)) .gt. 0d0) then
 		    do i1 = elToDRange(element-1) + 1, elToDRange(element)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'elastic' .and. dSubCat(i2) .eq. 'stiffnessMat') then
+				if(dCategory(i2) .eq. 'stiffnessMat') then
 				    i3 = dComponent(i2)
 					stiffMat(i3) = stiffMat(i3) + elToCoef(i1)*c_dVec(i2)
 				endif
@@ -43,16 +43,14 @@ module AStrO_c_designPropertyFunctions
         else	
 			do i1 = elToDRange(element-1) + 1, elToDRange(element)
 				i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'elastic') then
-					if(dSubCat(i2) .eq. 'modulus') then
-						i3 = dComponent(i2)
-					elseif(dSubCat(i2) .eq. 'poissonRatio') then
-						i3 = dComponent(i2) + 3
-					else
-						i3 = dComponent(i2) + 6
-					endif
-					eProps(i3) = eProps(i3) + elToCoef(i1)*c_dVec(i2)
+				if(dCategory(i2) .eq. 'modulus') then
+					i3 = dComponent(i2)
+				elseif(dCategory(i2) .eq. 'poissonRatio') then
+					i3 = dComponent(i2) + 3
+				elseif(dCategory(i2) .eq. 'shearModulus') then
+					i3 = dComponent(i2) + 6
 				endif
+				eProps(i3) = eProps(i3) + elToCoef(i1)*c_dVec(i2)
 			enddo
 			
 			SMat(:,:) = c_0
@@ -239,7 +237,7 @@ module AStrO_c_designPropertyFunctions
 			layerThick = c_1*layupThickness(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dSubCat(i3) .eq. 'thickness' .and. dLayer(i3) .eq. layerNum) then
+			    if(dCategory(i3) .eq. 'thickness' .and. dLayer(i3) .eq. layerNum) then
 				    layerThick = layerThick + elToCoef(i2)*c_dVec(i3)
 				endif
 			enddo
@@ -249,7 +247,7 @@ module AStrO_c_designPropertyFunctions
 		zOff = c_1*sectionZOffset(secNum)
 		do i1 = elToDRange(element-1)+1, elToDRange(element)
 		    i2 = elToD(i1)
-			if(dCategory(i2) .eq. 'layup' .and. dSubCat(i2) .eq. 'zOffset') then
+			if(dCategory(i2) .eq. 'zOffset') then
 			    zOff = zOff + elToCoef(i1)*c_dVec(i2)
 			endif
 		enddo
@@ -288,17 +286,17 @@ module AStrO_c_designPropertyFunctions
 			layerProps(6) = c_1*layupAngle(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layerNum) then
-				    if(dSubCat(i3) .eq. 'modulus') then
+			    if(dLayer(i3) .eq. layerNum) then
+				    if(dCategory(i3) .eq. 'modulus') then
 					    i4 = dComponent(i3)
 						layerProps(i4) = layerProps(i4) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'poissonRatio') then
+					elseif(dCategory(i3) .eq. 'poissonRatio') then
 					    layerProps(3) = layerProps(3) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'shearModulus') then
+					elseif(dCategory(i3) .eq. 'shearModulus') then
 					    layerProps(4) = layerProps(4) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'thickness') then
+					elseif(dCategory(i3) .eq. 'thickness') then
 					    layerProps(5) = layerProps(5) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'angle') then
+					elseif(dCategory(i3) .eq. 'angle') then
 					    layerProps(6) = layerProps(6) + elToCoef(i2)*c_dVec(i3)
 				    endif
 				endif
@@ -395,20 +393,20 @@ module AStrO_c_designPropertyFunctions
 			layerProps(6) = c_1*layupAngle(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layerNum) then
-				    if(dSubCat(i3) .eq. 'thermalExp') then
+			    if(dLayer(i3) .eq. layerNum) then
+				    if(dCategory(i3) .eq. 'thermalExp') then
 					    i4 = dComponent(i3)
 						layerExp(i4) = layerExp(i4) + elToCoef(i2)*c_dVec(i3)
-				    elseif(dSubCat(i3) .eq. 'modulus') then
+				    elseif(dCategory(i3) .eq. 'modulus') then
 					    i4 = dComponent(i3)
 						layerProps(i4) = layerProps(i4) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'poissonRatio') then
+					elseif(dCategory(i3) .eq. 'poissonRatio') then
 					    layerProps(3) = layerProps(3) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'shearModulus') then
+					elseif(dCategory(i3) .eq. 'shearModulus') then
 					    layerProps(4) = layerProps(4) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'thickness') then
+					elseif(dCategory(i3) .eq. 'thickness') then
 					    layerProps(5) = layerProps(5) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'angle') then
+					elseif(dCategory(i3) .eq. 'angle') then
 					    layerProps(6) = layerProps(6) + elToCoef(i2)*c_dVec(i3)
 				    endif
 				endif
@@ -501,10 +499,10 @@ module AStrO_c_designPropertyFunctions
 			layerThick = c_1*layupThickness(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layerNum) then
-				    if(dSubCat(i3) .eq. 'density') then
+			    if(dLayer(i3) .eq. layerNum) then
+				    if(dCategory(i3) .eq. 'density') then
 				        layerDen = layerDen + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'thickness') then
+					elseif(dCategory(i3) .eq. 'thickness') then
 					    layerThick = layerThick + elToCoef(i2)*c_dVec(i3)
 					endif
 				endif
@@ -552,13 +550,13 @@ module AStrO_c_designPropertyFunctions
 			layerThick = c_1*layupThickness(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layerNum) then
-				    if(dSubCat(i3) .eq. 'thermalCond') then
+			    if(dLayer(i3) .eq. layerNum) then
+				    if(dCategory(i3) .eq. 'thermalCond') then
 					    i4 = dComponent(i3)
 						layerCond(i4) = layerCond(i4) + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'angle') then
+					elseif(dCategory(i3) .eq. 'angle') then
 					    layerAngle = layerAngle + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'thickness') then
+					elseif(dCategory(i3) .eq. 'thickness') then
 					    layerThick = layerThick + elToCoef(i2)*c_dVec(i3)
 				    endif
 				endif
@@ -626,14 +624,14 @@ module AStrO_c_designPropertyFunctions
 			layerThick = c_1*layupThickness(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layerNum) then
-				    if(dSubCat(i3) .eq. 'specHeat') then
+			    if(dLayer(i3) .eq. layerNum) then
+				    if(dCategory(i3) .eq. 'specHeat') then
 						layerSH = layerSH + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'density') then
+					elseif(dCategory(i3) .eq. 'density') then
 					    layerDen = layerDen + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'angle') then
+					elseif(dCategory(i3) .eq. 'angle') then
 					    layerAngle = layerAngle + elToCoef(i2)*c_dVec(i3)
-					elseif(dSubCat(i3) .eq. 'thickness') then
+					elseif(dCategory(i3) .eq. 'thickness') then
 					    layerThick = layerThick + elToCoef(i2)*c_dVec(i3)
 				    endif
 				endif
@@ -657,15 +655,13 @@ module AStrO_c_designPropertyFunctions
         props(:) = c_1*beamProperties(:,secNum)
 		do i1 = elToDRange(element-1)+1, elToDRange(element)
 			i2 = elToD(i1)
-			if(dCategory(i2) .eq. 'beamProperties') then
-				if(dSubCat(i2) .eq. 'area') then
-					props(1) = props(1) + elToCoef(i1)*c_dVec(i2)
-				elseif(dSubCat(i2) .eq. 'areaMoment') then
-					i3 = dComponent(i2)
-					props(1+i3) = props(1+i3) + elToCoef(i1)*c_dVec(i2)
-				elseif(dSubCat(i2) .eq. 'polarMoment') then
-					props(7) = props(7) + elToCoef(i1)*c_dVec(i2)
-				endif
+			if(dCategory(i2) .eq. 'area') then
+				props(1) = props(1) + elToCoef(i1)*c_dVec(i2)
+			elseif(dCategory(i2) .eq. 'areaMoment') then
+				i3 = dComponent(i2)
+				props(1+i3) = props(1+i3) + elToCoef(i1)*c_dVec(i2)
+			elseif(dCategory(i2) .eq. 'polarMoment') then
+				props(7) = props(7) + elToCoef(i1)*c_dVec(i2)
 			endif
 		enddo	
 		
@@ -687,11 +683,9 @@ module AStrO_c_designPropertyFunctions
 		    stiffMat = c_1*beamStiffness(:,secNum)
 			do i1 = elToDRange(element-1)+1, elToDRange(element)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'beamProperties') then
-				    if(dSubCat(i2) .eq. 'stiffnessMat') then
-					    i3 = dComponent(i2)
-					    stiffMat(i3) = props(i3) + elToCoef(i1)*c_dVec(i2)
-					endif
+				if(dCategory(i2) .eq. 'stiffnessMat') then
+					i3 = dComponent(i2)
+					stiffMat(i3) = props(i3) + elToCoef(i1)*c_dVec(i2)
 				endif
 			enddo
 		    Cmat(1,1:6) = stiffMat(1:6)
@@ -712,19 +706,17 @@ module AStrO_c_designPropertyFunctions
 			shearMod = c_1*materialElastic(7,i3)
 		    do i1 = elToDRange(element-1)+1, elToDRange(element)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'beamProperties') then
-				    if(dSubCat(i2) .eq. 'area') then
-					    props(1) = props(1) + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'areaMoment') then
-					    i3 = dComponent(i2)
-					    props(1+i3) = props(1+i3) + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'polarMoment') then
-					    props(7) = props(7) + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'modulus') then
-					    modulus = modulus + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'shearModulus') then
-					    shearMod = shearMod + elToCoef(i1)*c_dVec(i2)
-					endif
+				if(dCategory(i2) .eq. 'area') then
+					props(1) = props(1) + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'areaMoment') then
+					i3 = dComponent(i2)
+					props(1+i3) = props(1+i3) + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'polarMoment') then
+					props(7) = props(7) + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'modulus') then
+					modulus = modulus + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'shearModulus') then
+					shearMod = shearMod + elToCoef(i1)*c_dVec(i2)
 				endif
 			enddo
 			Cmat(1,1) = props(1)*modulus
@@ -763,11 +755,9 @@ module AStrO_c_designPropertyFunctions
 		    expLoad(:) = c_1*beamExpLoadCoef(:,secNum)
 			do i1 = elToDRange(element-1)+1, elToDRange(element)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'beamProperties') then
-				    if(dSubCat(i2) .eq. 'expLoadCoef') then
-					    i3 = dComponent(i2)
-					    expLoad(i3) = expLoad(i3) + elToCoef(i1)*c_dVec(i2)
-					endif
+				if(dCategory(i2) .eq. 'thermExp') then
+					i3 = dComponent(i2)
+					expLoad(i3) = expLoad(i3) + elToCoef(i1)*c_dVec(i2)
 				endif
 			enddo
 		else
@@ -803,7 +793,7 @@ module AStrO_c_designPropertyFunctions
 		if(abs(bMass(1)) .gt. 0d0) then
 		    do i1 = elToDRange(element-1)+1, elToDRange(element)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'beamProperties' .and. dSubCat(i2) .eq. 'massMat') then
+				if(dCategory(i2) .eq. 'massMat') then
 				    i3 = dComponent(i2)
 					bMass(i3) = bMass(i3) + elToCoef(i1)*c_dVec(i2)
 				endif
@@ -822,17 +812,15 @@ module AStrO_c_designPropertyFunctions
 		else
 		    do i1 = elToDRange(element-1)+1, elToDRange(element)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'beamProperties') then
-				    if(dSubCat(i2) .eq. 'area') then
-					    props(1) = props(1) + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'areaMoment') then
-					    i3 = dComponent(i2)
-						props(1+i3) = props(1+i3) + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'polarMoment') then
-					    props(7) = props(7) + elToCoef(i1)*c_dVec(i2)
-					elseif(dSubCat(i2) .eq. 'density') then
-					    secDen = secDen + elToCoef(i1)*c_dVec(i2)
-					endif
+				if(dCategory(i2) .eq. 'area') then
+					props(1) = props(1) + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'areaMoment') then
+					i3 = dComponent(i2)
+					props(1+i3) = props(1+i3) + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'polarMoment') then
+					props(7) = props(7) + elToCoef(i1)*c_dVec(i2)
+				elseif(dCategory(i2) .eq. 'density') then
+					secDen = secDen + elToCoef(i1)*c_dVec(i2)
 				endif
 			enddo
 			mMat(:,:) = c_0
@@ -878,13 +866,11 @@ module AStrO_c_designPropertyFunctions
 		
 		do i1 = elToDRange(element-1)+1, elToDRange(element)
 			i2 = elToD(i1)
-			if(dCategory(i2) .eq. 'beamProperties') then
-			    if(dSubCat(i2) .eq. 'thermalCond') then
-					i3 = dComponent(i2)
-					tCVec(i3) = tCVec(i3) + elToCoef(i1)*c_dVec(i2)
-				elseif(dSubCat(i2) .eq. 'area') then
-				    area = area + elToCoef(i1)*c_dVec(i2)
-				endif
+			if(dCategory(i2) .eq. 'thermalCond') then
+				i3 = dComponent(i2)
+				tCVec(i3) = tCVec(i3) + elToCoef(i1)*c_dVec(i2)
+			elseif(dCategory(i2) .eq. 'area') then
+				area = area + elToCoef(i1)*c_dVec(i2)
 			endif
 		enddo
 		tCond(1,1) = tCVec(1)
@@ -925,14 +911,12 @@ module AStrO_c_designPropertyFunctions
 		
 		do i1 = elToDRange(element-1)+1, elToDRange(element)
 			i2 = elToD(i1)
-			if(dCategory(i2) .eq. 'beamProperties') then
-			    if(dSubCat(i2) .eq. 'specHeat') then
-					sH = sH + elToCoef(i1)*c_dVec(i2)
-				elseif(dSubCat(i2) .eq. 'area') then
-				    area = area + elToCoef(i1)*c_dVec(i2)
-				elseif(dSubCat(i2) .eq. 'density') then
-				    den = den + elToCoef(i1)*c_dVec(i2)
-				endif
+			if(dCategory(i2) .eq. 'specHeat') then
+				sH = sH + elToCoef(i1)*c_dVec(i2)
+			elseif(dCategory(i2) .eq. 'area') then
+				area = area + elToCoef(i1)*c_dVec(i2)
+			elseif(dCategory(i2) .eq. 'density') then
+				den = den + elToCoef(i1)*c_dVec(i2)
 			endif
 		enddo
 		
@@ -981,10 +965,10 @@ module AStrO_c_designPropertyFunctions
 			i3 = ndToD(i2)
 			call c_greater(check1,time,c_1*dActTime(1,i3))
 			call c_greater(check2,c_1*dActTime(2,i3),time)
-			if(dCategory(i3) .eq. 'nodeLoad' .and. check1 .eq. 1 .and. check2 .eq. 1) then
-				if(dSubCat(i3) .eq. 'thermal') then
+			if(check1 .eq. 1 .and. check2 .eq. 1) then
+				if(dCategory(i3) .eq. 'thermalLoad') then
 					ndLd(7) = ndLd(7) + ndToCoef(i2)*c_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'elastic') then
+				elseif(dCategory(i3) .eq. 'elasticLoad') then
 					i4 = dComponent(i3)
 	                ndLd(i4) = ndLd(i4) + ndToCoef(i2)*c_dVec(i3)
 				endif

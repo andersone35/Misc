@@ -2,11 +2,11 @@
 
 *readModelInput: X
     fileName:
-*readLoads:
+*readLoads: X
     fileName:
-*readConstraints:
+*readConstraints: X
     fileName:
-*readInitialState: 
+*readInitialState: X 
     fileName:
 *readDesignVarInput: X
     fileName:
@@ -29,19 +29,17 @@
 	simPeriod:
 	saveSolnHist: no
 
-*modalAnalysis:
+*modalAnalysis: X
     type: buckling
     numModes: 10
 	
-*setDispToMode:
+*setDispToMode: X
     mode:
     scaleFactor:
 
-*calcObjective:
-    staticLoadTime:
+*calcObjective: X
 	
-*calcObjGradient:
-    staticLoadTime:
+*calcObjGradient: X
 
 *writeNodeResults: X
     fileName:
@@ -84,7 +82,7 @@
 		- 7
         - [10,100,10]
 		
-*writeModalResults:
+*writeModalResults: X
     fileName:
 	writeModes: yes
 
@@ -98,13 +96,17 @@
 		- nodeSet
 		- elementSet
 		- activeTime
+
+*writeNodeCoordinates: X
+    fileName:
+	nodeSet:
 		
-*writeElementProperties:
+*writeElementProperties: X
     fileName:
 	elementSet:
 	properties:
-	    - elastic
-		- thermalCond
+		- density
+		- modulus
 		...
 
 *writeObjective: X

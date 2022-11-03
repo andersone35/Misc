@@ -63,10 +63,10 @@ module AStrO_input
 		numSec = 0
 		layupSize = 0
 		numMats = 0
-		numMPC = 0
-		mpcSize = 0
-		numLds = 0
-		sizeLds = 0
+		! numMPC = 0
+		! mpcSize = 0
+		! numLds = 0
+		! sizeLds = 0
 		
 		read(1,'(A)',iostat=iosVal) fileLine(16:256)  !! IOSTAT = 0 perfect, > 0 problem occured, < 0 end of file
 		do while(iosVal .eq. 0)
@@ -207,70 +207,70 @@ module AStrO_input
 						read(1,'(A)',iostat=iosVal) fileLine(16:256)
 						call findSubstrings(found,fileLine,subStrings,8)
 					enddo
-				elseif(fileLine(i1-11:i1) .eq. 'constraints:') then
-				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					call findSubstrings(found,fileLine,subStrings,8)
-					do while(found .eq. 0 .and. iosVal .eq. 0)
-						i1 = index(fileLine,':')
-						if(i1 .gt. 0) then
-						    if(fileLine(i1-6:i1) .eq. 'matrix:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'-')
-									if(i2 .gt. 0) then
-									    mpcSize = mpcSize + 1
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-									i1 = index(fileLine,':')
-								enddo
-							elseif(fileLine(i1-3:i1) .eq. 'rhs:') then
-								read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-									i2 = index(fileLine,'-')
-									if(i2 .gt. 0) then
-										numMPC = numMPC + 1
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-									i1 = index(fileLine,':')
-								enddo
-							else
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							endif
-						else
-						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						endif
-						call findSubstrings(found,fileLine,subStrings,8)
-					enddo
-				elseif(fileLine(i1-5:i1) .eq. 'loads:') then
-					read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					call findSubstrings(found,fileLine,subStrings,8)
-					do while(found .eq. 0 .and. iosVal .eq. 0)
-					    i1 = index(fileLine,':')
-						if(i1 .gt. 0) then
-						    if(fileLine(i1-4:i1) .eq. 'type:') then
-							    numLds = numLds + 1
-								read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							elseif(fileLine(i1-8:i1) .eq. 'setLoads:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'-')
-									if(i2 .gt. 0) then
-									    sizeLds = sizeLds + 1
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								    i1 = index(fileLine,':')
-								enddo
-							else
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							endif
-						else
-						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						endif
-						call findSubstrings(found,fileLine,subStrings,8)
-					enddo
+				! elseif(fileLine(i1-11:i1) .eq. 'constraints:') then
+				    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					! call findSubstrings(found,fileLine,subStrings,8)
+					! do while(found .eq. 0 .and. iosVal .eq. 0)
+						! i1 = index(fileLine,':')
+						! if(i1 .gt. 0) then
+						    ! if(fileLine(i1-6:i1) .eq. 'matrix:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'-')
+									! if(i2 .gt. 0) then
+									    ! mpcSize = mpcSize + 1
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									! i1 = index(fileLine,':')
+								! enddo
+							! elseif(fileLine(i1-3:i1) .eq. 'rhs:') then
+								! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+									! i2 = index(fileLine,'-')
+									! if(i2 .gt. 0) then
+										! numMPC = numMPC + 1
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									! i1 = index(fileLine,':')
+								! enddo
+							! else
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! endif
+						! else
+						    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						! endif
+						! call findSubstrings(found,fileLine,subStrings,8)
+					! enddo
+				! elseif(fileLine(i1-5:i1) .eq. 'loads:') then
+					! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					! call findSubstrings(found,fileLine,subStrings,8)
+					! do while(found .eq. 0 .and. iosVal .eq. 0)
+					    ! i1 = index(fileLine,':')
+						! if(i1 .gt. 0) then
+						    ! if(fileLine(i1-4:i1) .eq. 'type:') then
+							    ! numLds = numLds + 1
+								! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! elseif(fileLine(i1-8:i1) .eq. 'setLoads:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'-')
+									! if(i2 .gt. 0) then
+									    ! sizeLds = sizeLds + 1
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								    ! i1 = index(fileLine,':')
+								! enddo
+							! else
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! endif
+						! else
+						    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						! endif
+						! call findSubstrings(found,fileLine,subStrings,8)
+					! enddo
 				else
 				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
 				endif
@@ -373,30 +373,30 @@ module AStrO_input
 			materialMaxStrnEngy(:) = r_0
 		endif
 		
-		if(numMPC .gt. 0 .and. .not. allocated(mpcEqn)) then
-		    allocate(mpcEqn(mpcSize))
-			allocate(mpcNode(mpcSize))
-			allocate(mpcDof(mpcSize))
-			allocate(mpcCoef(mpcSize))
-			allocate(mpcRHS(numMPC))
+		! if(numMPC .gt. 0 .and. .not. allocated(mpcEqn)) then
+		    ! allocate(mpcEqn(mpcSize))
+			! allocate(mpcNode(mpcSize))
+			! allocate(mpcDof(mpcSize))
+			! allocate(mpcCoef(mpcSize))
+			! allocate(mpcRHS(numMPC))
 			
-			mpcEqn(:) = r_0
-			mpcDof(:) = r_0
-			mpcCoef(:) = r_0
-			mpcRHS(:) = r_0
-		endif
+			! mpcEqn(:) = r_0
+			! mpcDof(:) = r_0
+			! mpcCoef(:) = r_0
+			! mpcRHS(:) = r_0
+		! endif
 		
-		if(numLds .gt. 0 .and. .not. allocated(loadNodes)) then
-		    allocate(loadNodes(sizeLds))
-			allocate(inputLoads(7,sizeLds))
-			allocate(loadsRange(0:numLds))
-			allocate(loadsActTime(2,numLds))
-		    allocate(loadType(numLds))
+		! if(numLds .gt. 0 .and. .not. allocated(loadNodes)) then
+		    ! allocate(loadNodes(sizeLds))
+			! allocate(inputLoads(7,sizeLds))
+			! allocate(loadsRange(0:numLds))
+			! allocate(loadsActTime(2,numLds))
+		    ! allocate(loadType(numLds))
 			
-			inputLoads(:,:) = r_0
-			loadsRange(:) = r_0
-			loadsActTime(:,:) = r_0
-		endif
+			! inputLoads(:,:) = r_0
+			! loadsRange(:) = r_0
+			! loadsActTime(:,:) = r_0
+		! endif
 		
 		rewind(1)
 		
@@ -811,236 +811,236 @@ module AStrO_input
 					    materialElastic(4,matNum) = r_p5*materialElastic(1,matNum)/materialElastic(7,matNum) + r_1
 						materialElastic(5:6,matNum) = materialElastic(4,matNum)
 					endif
-				elseif(fileLine(i1-11:i1) .eq. 'constraints:') then
-					termNum = 0
-					mpcNum = 0
-				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					call findSubstrings(found,fileLine,subStrings,8)
-					do while(found .eq. 0 .and. iosVal .eq. 0)
-						i1 = index(fileLine,':')
-						if(i1 .gt. 0) then
-						    if(fileLine(i1-6:i1) .eq. 'matrix:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    termNum = termNum + 1
-									    i3 = index(fileLine,']')
-										read(fileLine(i2+1:i3-1),*) mpcEqn(termNum), mpcNode(termNum), mpcDof(termNum), mpcCoef(termNum)
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-									i1 = index(fileLine,':')
-								enddo
-							elseif(fileLine(i1-3:i1) .eq. 'rhs:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-									i2 = index(fileLine,'-')
-									if(i2 .gt. 0) then
-									    mpcNum = mpcNum + 1
-										read(fileLine(i2+1:i2+64),*) mpcRHS(mpcNum)
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-									i1 = index(fileLine,':')
-								enddo
-							else
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							endif
-						else
-						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						endif
-						call findSubstrings(found,fileLine,subStrings,8)
-					enddo
-				elseif(fileLine(i1-5:i1) .eq. 'loads:') then
-					loadsRange(0) = 0
-					termNum = 0
-					loadNum = 0
-					read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					call findSubstrings(found,fileLine,subStrings,8)
-					do while(found .eq. 0 .and. iosVal .eq. 0)
-					    i1 = index(fileLine,':')
-						if(i1 .gt. 0) then
-						    if(fileLine(i1-4:i1) .eq. 'type:') then
-							    loadNum = loadNum + 1
-							    read(fileLine(i1+1:i1+64),*) loadType(loadNum)
-								read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						    elseif(fileLine(i1-10:i1) .eq. 'activeTime:') then
-								i2 = index(fileLine,'[')
-								if(i2 .gt. 0) then
-								    i3 = index(fileLine,']')
-									read(fileLine(i2+1:i3-1),*) loadsActTime(1:2,loadNum)
-								else
-								    read(fileLine(i1+1:i1+64),*) loadsActTime(1,loadNum)
-									loadsActTime(2,loadNum) = r_1*1e+100_8
-								endif
-								read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							elseif(fileLine(i1-8:i1) .eq. 'setLoads:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    termNum = termNum + 1
-									    i3 = index(fileLine,']')
-										if(loadType(loadNum) .eq. 'gravitational') then
-										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:3,termNum)
-										elseif(loadType(loadNum) .eq. 'surfacePressure') then
-										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:5,termNum)
-										elseif(loadType(loadNum) .eq. 'bodyHeatGen') then
-										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1,termNum)
-										elseif(loadType(loadNum) .eq. 'surfaceFlux') then
-										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:5,termNum)
-										else
-										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:7,termNum)
-										endif
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-								    i1 = index(fileLine,':')
-								enddo
-								loadsRange(loadNum) = termNum
-							else
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							endif
-						else
-						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						endif
-						call findSubstrings(found,fileLine,subStrings,8)
-					enddo
-				elseif(fileLine(i1-12:i1) .eq. 'initialState:') then
-					read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					call findSubstrings(found,fileLine,subStrings,8)
-					do while(found .eq. 0 .and. iosVal .eq. 0)
-					    i1 = index(fileLine,':')
-						if(i1 .gt. 0) then
-						    if(fileLine(i1-12:i1) .eq. 'displacement:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					            i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    i3 = index(fileLine,']')
-										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
-										read(readChar,*,err=862) readInt(1)
-										initialDisp(:,readInt(1)) = readReal(1:6)
-										goto 870
-862								        do i4 = 1, numNdSets
-                                            if(ndSetName(i4) .eq. readChar) then
-											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
-												    i6 = nodeSets(i5)
-													initialDisp(:,i6) = readReal(1:6)
-												enddo
-											endif
-                                        enddo
-870										i1 = index(fileLine,':')
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					                i1 = index(fileLine,':')
-								enddo
-							elseif(fileLine(i1-8:i1) .eq. 'velocity:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					            i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    i3 = index(fileLine,']')
-										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
-										read(readChar,*,err=886) readInt(1)
-										initialVel(:,readInt(1)) = readReal(1:6)
-										goto 894
-886								        do i4 = 1, numNdSets
-                                            if(ndSetName(i4) .eq. readChar) then
-											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
-												    i6 = nodeSets(i5)
-													initialVel(:,i6) = readReal(1:6)
-												enddo
-											endif
-                                        enddo
-894										i1 = index(fileLine,':')
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					                i1 = index(fileLine,':')
-								enddo
-							elseif(fileLine(i1-12:i1) .eq. 'acceleration:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					            i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    i3 = index(fileLine,']')
-										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
-										read(readChar,*,err=910) readInt(1)
-										initialAcc(:,readInt(1)) = readReal(1:6)
-										goto 918
-910								        do i4 = 1, numNdSets
-                                            if(ndSetName(i4) .eq. readChar) then
-											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
-												    i6 = nodeSets(i5)
-													initialAcc(:,i6) = readReal(1:6)
-												enddo
-											endif
-                                        enddo
-918										i1 = index(fileLine,':')
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					                i1 = index(fileLine,':')
-								enddo
-						    elseif(fileLine(i1-11:i1) .eq. 'temperature:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					            i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    i3 = index(fileLine,']')
-										read(fileLine(i2+1:i3-1),*) readChar, readReal(1)
-										read(readChar,*,err=934) readInt(1)
-										initialTemp(readInt(1)) = readReal(1)
-										goto 942
-934								        do i4 = 1, numNdSets
-                                            if(ndSetName(i4) .eq. readChar) then
-											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
-												    i6 = nodeSets(i5)
-													initialTemp(i6) = readReal(1)
-												enddo
-											endif
-                                        enddo
-942										i1 = index(fileLine,':')
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					                i1 = index(fileLine,':')
-								enddo
-							elseif(fileLine(i1-14:i1) .eq. 'tempChangeRate:') then
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					            i1 = index(fileLine,':')
-								do while(i1 .eq. 0 .and. iosVal .eq. 0)
-								    i2 = index(fileLine,'[')
-									if(i2 .gt. 0) then
-									    i3 = index(fileLine,']')
-										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
-										read(readChar,*,err=958) readInt(1)
-										initialTdot(readInt(1)) = readReal(1)
-										goto 966
-958								        do i4 = 1, numNdSets
-                                            if(ndSetName(i4) .eq. readChar) then
-											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
-												    i6 = nodeSets(i5)
-													initialTdot(i6) = readReal(1)
-												enddo
-											endif
-                                        enddo
-966										i1 = index(fileLine,':')
-									endif
-									read(1,'(A)',iostat=iosVal) fileLine(16:256)
-					                i1 = index(fileLine,':')
-								enddo
-							else
-							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-							endif
-						else
-						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						endif
-						call findSubstrings(found,fileLine,subStrings,8)
-					enddo
+				! elseif(fileLine(i1-11:i1) .eq. 'constraints:') then
+					! termNum = 0
+					! mpcNum = 0
+				    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					! call findSubstrings(found,fileLine,subStrings,8)
+					! do while(found .eq. 0 .and. iosVal .eq. 0)
+						! i1 = index(fileLine,':')
+						! if(i1 .gt. 0) then
+						    ! if(fileLine(i1-6:i1) .eq. 'matrix:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! termNum = termNum + 1
+									    ! i3 = index(fileLine,']')
+										! read(fileLine(i2+1:i3-1),*) mpcEqn(termNum), mpcNode(termNum), mpcDof(termNum), mpcCoef(termNum)
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									! i1 = index(fileLine,':')
+								! enddo
+							! elseif(fileLine(i1-3:i1) .eq. 'rhs:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+									! i2 = index(fileLine,'-')
+									! if(i2 .gt. 0) then
+									    ! mpcNum = mpcNum + 1
+										! read(fileLine(i2+1:i2+64),*) mpcRHS(mpcNum)
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									! i1 = index(fileLine,':')
+								! enddo
+							! else
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! endif
+						! else
+						    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						! endif
+						! call findSubstrings(found,fileLine,subStrings,8)
+					! enddo
+				! elseif(fileLine(i1-5:i1) .eq. 'loads:') then
+					! loadsRange(0) = 0
+					! termNum = 0
+					! loadNum = 0
+					! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					! call findSubstrings(found,fileLine,subStrings,8)
+					! do while(found .eq. 0 .and. iosVal .eq. 0)
+					    ! i1 = index(fileLine,':')
+						! if(i1 .gt. 0) then
+						    ! if(fileLine(i1-4:i1) .eq. 'type:') then
+							    ! loadNum = loadNum + 1
+							    ! read(fileLine(i1+1:i1+64),*) loadType(loadNum)
+								! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						    ! elseif(fileLine(i1-10:i1) .eq. 'activeTime:') then
+								! i2 = index(fileLine,'[')
+								! if(i2 .gt. 0) then
+								    ! i3 = index(fileLine,']')
+									! read(fileLine(i2+1:i3-1),*) loadsActTime(1:2,loadNum)
+								! else
+								    ! read(fileLine(i1+1:i1+64),*) loadsActTime(1,loadNum)
+									! loadsActTime(2,loadNum) = r_1*1e+100_8
+								! endif
+								! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! elseif(fileLine(i1-8:i1) .eq. 'setLoads:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! termNum = termNum + 1
+									    ! i3 = index(fileLine,']')
+										! if(loadType(loadNum) .eq. 'gravitational') then
+										    ! read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:3,termNum)
+										! elseif(loadType(loadNum) .eq. 'surfacePressure') then
+										    ! read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:5,termNum)
+										! elseif(loadType(loadNum) .eq. 'bodyHeatGen') then
+										    ! read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1,termNum)
+										! elseif(loadType(loadNum) .eq. 'surfaceFlux') then
+										    ! read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:5,termNum)
+										! else
+										    ! read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:7,termNum)
+										! endif
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								    ! i1 = index(fileLine,':')
+								! enddo
+								! loadsRange(loadNum) = termNum
+							! else
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! endif
+						! else
+						    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						! endif
+						! call findSubstrings(found,fileLine,subStrings,8)
+					! enddo
+				! elseif(fileLine(i1-12:i1) .eq. 'initialState:') then
+					! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					! call findSubstrings(found,fileLine,subStrings,8)
+					! do while(found .eq. 0 .and. iosVal .eq. 0)
+					    ! i1 = index(fileLine,':')
+						! if(i1 .gt. 0) then
+						    ! if(fileLine(i1-12:i1) .eq. 'displacement:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            ! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! i3 = index(fileLine,']')
+										! read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										! read(readChar,*,err=862) readInt(1)
+										! initialDisp(:,readInt(1)) = readReal(1:6)
+										! goto 870
+! 862								        do i4 = 1, numNdSets
+                                            ! if(ndSetName(i4) .eq. readChar) then
+											    ! do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    ! i6 = nodeSets(i5)
+													! initialDisp(:,i6) = readReal(1:6)
+												! enddo
+											! endif
+                                        ! enddo
+! 870										i1 = index(fileLine,':')
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                ! i1 = index(fileLine,':')
+								! enddo
+							! elseif(fileLine(i1-8:i1) .eq. 'velocity:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            ! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! i3 = index(fileLine,']')
+										! read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										! read(readChar,*,err=886) readInt(1)
+										! initialVel(:,readInt(1)) = readReal(1:6)
+										! goto 894
+! 886								        do i4 = 1, numNdSets
+                                            ! if(ndSetName(i4) .eq. readChar) then
+											    ! do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    ! i6 = nodeSets(i5)
+													! initialVel(:,i6) = readReal(1:6)
+												! enddo
+											! endif
+                                        ! enddo
+! 894										i1 = index(fileLine,':')
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                ! i1 = index(fileLine,':')
+								! enddo
+							! elseif(fileLine(i1-12:i1) .eq. 'acceleration:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            ! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! i3 = index(fileLine,']')
+										! read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										! read(readChar,*,err=910) readInt(1)
+										! initialAcc(:,readInt(1)) = readReal(1:6)
+										! goto 918
+! 910								        do i4 = 1, numNdSets
+                                            ! if(ndSetName(i4) .eq. readChar) then
+											    ! do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    ! i6 = nodeSets(i5)
+													! initialAcc(:,i6) = readReal(1:6)
+												! enddo
+											! endif
+                                        ! enddo
+! 918										i1 = index(fileLine,':')
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                ! i1 = index(fileLine,':')
+								! enddo
+						    ! elseif(fileLine(i1-11:i1) .eq. 'temperature:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            ! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! i3 = index(fileLine,']')
+										! read(fileLine(i2+1:i3-1),*) readChar, readReal(1)
+										! read(readChar,*,err=934) readInt(1)
+										! initialTemp(readInt(1)) = readReal(1)
+										! goto 942
+! 934								        do i4 = 1, numNdSets
+                                            ! if(ndSetName(i4) .eq. readChar) then
+											    ! do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    ! i6 = nodeSets(i5)
+													! initialTemp(i6) = readReal(1)
+												! enddo
+											! endif
+                                        ! enddo
+! 942										i1 = index(fileLine,':')
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                ! i1 = index(fileLine,':')
+								! enddo
+							! elseif(fileLine(i1-14:i1) .eq. 'tempChangeRate:') then
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            ! i1 = index(fileLine,':')
+								! do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    ! i2 = index(fileLine,'[')
+									! if(i2 .gt. 0) then
+									    ! i3 = index(fileLine,']')
+										! read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										! read(readChar,*,err=958) readInt(1)
+										! initialTdot(readInt(1)) = readReal(1)
+										! goto 966
+! 958								        do i4 = 1, numNdSets
+                                            ! if(ndSetName(i4) .eq. readChar) then
+											    ! do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    ! i6 = nodeSets(i5)
+													! initialTdot(i6) = readReal(1)
+												! enddo
+											! endif
+                                        ! enddo
+! 966										i1 = index(fileLine,':')
+									! endif
+									! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                ! i1 = index(fileLine,':')
+								! enddo
+							! else
+							    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							! endif
+						! else
+						    ! read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						! endif
+						! call findSubstrings(found,fileLine,subStrings,8)
+					! enddo
 				else
 				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
 				endif
@@ -1095,6 +1095,495 @@ module AStrO_input
 		enddo
 	    
 	end subroutine readModelInput
+	
+	subroutine readLoads(inFileName)
+	    implicit none
+		
+		character(len=128), intent(in) :: inFileName
+		
+		character(len=256) :: fileLine
+		character(len=16) :: subStrings(16)
+		integer :: iosVal
+		integer :: i1, i2, i3, i4, i5, i6, found, inElSet, inMaxStress
+		integer :: elType, numNds, secNum, matNum, GSet, nuSet
+		integer :: layerNum, termNum, mpcNum, loadNum, eSNum, nSNum, elSi, ndSi
+		real*8 :: mag
+		real*8 :: v1(3), v2(3), v3(3)
+        integer :: readInt(9)
+        real*8 :: readReal(21)
+        character(len=64) :: readChar		
+		
+		open(unit=1, file=inFileName, blank='NULL', action='read')
+		
+		subStrings(1) = 'nodes:'
+		subStrings(2) = 'elements:'
+		subStrings(3) = 'sets:'
+		subStrings(4) = 'sections:'
+		subStrings(5) = 'materials:'
+		subStrings(6) = 'constraints:'
+		subStrings(7) = 'loads:'
+		subStrings(8) = 'initialState:'
+		
+		fileLine(1:15) = '               '
+		numLds = 0
+		sizeLds = 0
+		
+		read(1,'(A)',iostat=iosVal) fileLine(16:256)  !! IOSTAT = 0 perfect, > 0 problem occured, < 0 end of file
+		do while(iosVal .eq. 0)
+		    i1 = index(fileLine,':')
+		    if(i1 .gt. 0) then
+				if(fileLine(i1-5:i1) .eq. 'loads:') then
+					read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					call findSubstrings(found,fileLine,subStrings,8)
+					do while(found .eq. 0 .and. iosVal .eq. 0)
+					    i1 = index(fileLine,':')
+						if(i1 .gt. 0) then
+						    if(fileLine(i1-4:i1) .eq. 'type:') then
+							    numLds = numLds + 1
+								read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							elseif(fileLine(i1-8:i1) .eq. 'setLoads:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'-')
+									if(i2 .gt. 0) then
+									    sizeLds = sizeLds + 1
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								    i1 = index(fileLine,':')
+								enddo
+							else
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							endif
+						else
+						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						endif
+						call findSubstrings(found,fileLine,subStrings,8)
+					enddo
+				else
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+				endif
+			else
+			    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+			endif
+		enddo
+		
+		if(numLds .gt. 0 .and. .not. allocated(loadNodes)) then
+		    allocate(loadNodes(sizeLds))
+			allocate(inputLoads(7,sizeLds))
+			allocate(loadsRange(0:numLds))
+			allocate(loadsActTime(2,numLds))
+		    allocate(loadType(numLds))
+			
+			inputLoads(:,:) = r_0
+			loadsRange(:) = r_0
+			loadsActTime(:,:) = r_0
+		endif
+		
+		rewind(1)
+		
+		read(1,'(A)',iostat=iosVal) fileLine(16:256)  !! IOSTAT = 0 perfect, > 0 problem occured, < 0 end of file
+		do while(iosVal .eq. 0)
+		    i1 = index(fileLine,':')
+		    if(i1 .gt. 0) then
+				if(fileLine(i1-5:i1) .eq. 'loads:') then
+					loadsRange(0) = 0
+					termNum = 0
+					loadNum = 0
+					read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					call findSubstrings(found,fileLine,subStrings,8)
+					do while(found .eq. 0 .and. iosVal .eq. 0)
+					    i1 = index(fileLine,':')
+						if(i1 .gt. 0) then
+						    if(fileLine(i1-4:i1) .eq. 'type:') then
+							    loadNum = loadNum + 1
+							    read(fileLine(i1+1:i1+64),*) loadType(loadNum)
+								read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						    elseif(fileLine(i1-10:i1) .eq. 'activeTime:') then
+								i2 = index(fileLine,'[')
+								if(i2 .gt. 0) then
+								    i3 = index(fileLine,']')
+									read(fileLine(i2+1:i3-1),*) loadsActTime(1:2,loadNum)
+								else
+								    read(fileLine(i1+1:i1+64),*) loadsActTime(1,loadNum)
+									loadsActTime(2,loadNum) = r_1*1e+100_8
+								endif
+								read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							elseif(fileLine(i1-8:i1) .eq. 'setLoads:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    termNum = termNum + 1
+									    i3 = index(fileLine,']')
+										if(loadType(loadNum) .eq. 'gravitational') then
+										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:3,termNum)
+										elseif(loadType(loadNum) .eq. 'surfacePressure') then
+										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:5,termNum)
+										elseif(loadType(loadNum) .eq. 'bodyHeatGen') then
+										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1,termNum)
+										elseif(loadType(loadNum) .eq. 'surfaceFlux') then
+										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:5,termNum)
+										else
+										    read(fileLine(i2+1:i3-1),*) loadNodes(termNum), inputLoads(1:7,termNum)
+										endif
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								    i1 = index(fileLine,':')
+								enddo
+								loadsRange(loadNum) = termNum
+							else
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							endif
+						else
+						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						endif
+						call findSubstrings(found,fileLine,subStrings,8)
+					enddo
+				else
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+				endif
+			else
+			    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+			endif
+		enddo
+		
+		close(1)
+	  
+	end subroutine readLoads
+	
+	subroutine readConstraints(inFileName)
+	    implicit none
+		
+		character(len=128), intent(in) :: inFileName
+		
+		character(len=256) :: fileLine
+		character(len=16) :: subStrings(16)
+		integer :: iosVal
+		integer :: i1, i2, i3, i4, i5, i6, found, inElSet, inMaxStress
+		integer :: elType, numNds, secNum, matNum, GSet, nuSet
+		integer :: layerNum, termNum, mpcNum, loadNum, eSNum, nSNum, elSi, ndSi
+		real*8 :: mag
+		real*8 :: v1(3), v2(3), v3(3)
+        integer :: readInt(9)
+        real*8 :: readReal(21)
+        character(len=64) :: readChar		
+		
+		open(unit=1, file=inFileName, blank='NULL', action='read')
+		
+		subStrings(1) = 'nodes:'
+		subStrings(2) = 'elements:'
+		subStrings(3) = 'sets:'
+		subStrings(4) = 'sections:'
+		subStrings(5) = 'materials:'
+		subStrings(6) = 'constraints:'
+		subStrings(7) = 'loads:'
+		subStrings(8) = 'initialState:'
+		
+		fileLine(1:15) = '               '
+		numMPC = 0
+		mpcSize = 0
+		
+		read(1,'(A)',iostat=iosVal) fileLine(16:256)  !! IOSTAT = 0 perfect, > 0 problem occured, < 0 end of file
+		do while(iosVal .eq. 0)
+		    i1 = index(fileLine,':')
+		    if(i1 .gt. 0) then
+				if(fileLine(i1-11:i1) .eq. 'constraints:') then
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					call findSubstrings(found,fileLine,subStrings,8)
+					do while(found .eq. 0 .and. iosVal .eq. 0)
+						i1 = index(fileLine,':')
+						if(i1 .gt. 0) then
+						    if(fileLine(i1-6:i1) .eq. 'matrix:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'-')
+									if(i2 .gt. 0) then
+									    mpcSize = mpcSize + 1
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									i1 = index(fileLine,':')
+								enddo
+							elseif(fileLine(i1-3:i1) .eq. 'rhs:') then
+								read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+									i2 = index(fileLine,'-')
+									if(i2 .gt. 0) then
+										numMPC = numMPC + 1
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									i1 = index(fileLine,':')
+								enddo
+							else
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							endif
+						else
+						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						endif
+						call findSubstrings(found,fileLine,subStrings,8)
+					enddo
+				else
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+				endif
+			else
+			    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+			endif
+		enddo
+		
+		if(numMPC .gt. 0 .and. .not. allocated(mpcEqn)) then
+		    allocate(mpcEqn(mpcSize))
+			allocate(mpcNode(mpcSize))
+			allocate(mpcDof(mpcSize))
+			allocate(mpcCoef(mpcSize))
+			allocate(mpcRHS(numMPC))
+			
+			mpcEqn(:) = r_0
+			mpcDof(:) = r_0
+			mpcCoef(:) = r_0
+			mpcRHS(:) = r_0
+		endif
+		
+		rewind(1)
+		
+		read(1,'(A)',iostat=iosVal) fileLine(16:256)  !! IOSTAT = 0 perfect, > 0 problem occured, < 0 end of file
+		do while(iosVal .eq. 0)
+		    i1 = index(fileLine,':')
+		    if(i1 .gt. 0) then
+				if(fileLine(i1-11:i1) .eq. 'constraints:') then
+					termNum = 0
+					mpcNum = 0
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					call findSubstrings(found,fileLine,subStrings,8)
+					do while(found .eq. 0 .and. iosVal .eq. 0)
+						i1 = index(fileLine,':')
+						if(i1 .gt. 0) then
+						    if(fileLine(i1-6:i1) .eq. 'matrix:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    termNum = termNum + 1
+									    i3 = index(fileLine,']')
+										read(fileLine(i2+1:i3-1),*) mpcEqn(termNum), mpcNode(termNum), mpcDof(termNum), mpcCoef(termNum)
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									i1 = index(fileLine,':')
+								enddo
+							elseif(fileLine(i1-3:i1) .eq. 'rhs:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+								i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+									i2 = index(fileLine,'-')
+									if(i2 .gt. 0) then
+									    mpcNum = mpcNum + 1
+										read(fileLine(i2+1:i2+64),*) mpcRHS(mpcNum)
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+									i1 = index(fileLine,':')
+								enddo
+							else
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							endif
+						else
+						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						endif
+						call findSubstrings(found,fileLine,subStrings,8)
+					enddo
+				else
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+				endif
+			else
+			    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+			endif
+		enddo
+		
+		close(1)
+	    
+	end subroutine readConstraints
+	
+	subroutine readInitialState(inFileName)
+	    implicit none
+		
+		character(len=128), intent(in) :: inFileName
+		
+		character(len=256) :: fileLine
+		character(len=16) :: subStrings(16)
+		integer :: iosVal
+		integer :: i1, i2, i3, i4, i5, i6, found, inElSet, inMaxStress
+		integer :: elType, numNds, secNum, matNum, GSet, nuSet
+		integer :: layerNum, termNum, mpcNum, loadNum, eSNum, nSNum, elSi, ndSi
+		real*8 :: mag
+		real*8 :: v1(3), v2(3), v3(3)
+        integer :: readInt(9)
+        real*8 :: readReal(21)
+        character(len=64) :: readChar		
+		
+		open(unit=1, file=inFileName, blank='NULL', action='read')
+		
+		subStrings(1) = 'nodes:'
+		subStrings(2) = 'elements:'
+		subStrings(3) = 'sets:'
+		subStrings(4) = 'sections:'
+		subStrings(5) = 'materials:'
+		subStrings(6) = 'constraints:'
+		subStrings(7) = 'loads:'
+		subStrings(8) = 'initialState:'
+		
+		fileLine(1:15) = '               '
+		
+		read(1,'(A)',iostat=iosVal) fileLine(16:256)  !! IOSTAT = 0 perfect, > 0 problem occured, < 0 end of file
+		do while(iosVal .eq. 0)
+		    i1 = index(fileLine,':')
+		    if(i1 .gt. 0) then
+				if(fileLine(i1-12:i1) .eq. 'initialState:') then
+					read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					call findSubstrings(found,fileLine,subStrings,8)
+					do while(found .eq. 0 .and. iosVal .eq. 0)
+					    i1 = index(fileLine,':')
+						if(i1 .gt. 0) then
+						    if(fileLine(i1-12:i1) .eq. 'displacement:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    i3 = index(fileLine,']')
+										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										read(readChar,*,err=1459) readInt(1)
+										initialDisp(:,readInt(1)) = readReal(1:6)
+										goto 1467
+1459							        do i4 = 1, numNdSets
+                                            if(ndSetName(i4) .eq. readChar) then
+											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    i6 = nodeSets(i5)
+													initialDisp(:,i6) = readReal(1:6)
+												enddo
+											endif
+                                        enddo
+1467									i1 = index(fileLine,':')
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                i1 = index(fileLine,':')
+								enddo
+							elseif(fileLine(i1-8:i1) .eq. 'velocity:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    i3 = index(fileLine,']')
+										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										read(readChar,*,err=1483) readInt(1)
+										initialVel(:,readInt(1)) = readReal(1:6)
+										goto 1491
+1483							        do i4 = 1, numNdSets
+                                            if(ndSetName(i4) .eq. readChar) then
+											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    i6 = nodeSets(i5)
+													initialVel(:,i6) = readReal(1:6)
+												enddo
+											endif
+                                        enddo
+1491									i1 = index(fileLine,':')
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                i1 = index(fileLine,':')
+								enddo
+							elseif(fileLine(i1-12:i1) .eq. 'acceleration:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    i3 = index(fileLine,']')
+										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										read(readChar,*,err=1507) readInt(1)
+										initialAcc(:,readInt(1)) = readReal(1:6)
+										goto 1515
+1507							        do i4 = 1, numNdSets
+                                            if(ndSetName(i4) .eq. readChar) then
+											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    i6 = nodeSets(i5)
+													initialAcc(:,i6) = readReal(1:6)
+												enddo
+											endif
+                                        enddo
+1515									i1 = index(fileLine,':')
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                i1 = index(fileLine,':')
+								enddo
+						    elseif(fileLine(i1-11:i1) .eq. 'temperature:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    i3 = index(fileLine,']')
+										read(fileLine(i2+1:i3-1),*) readChar, readReal(1)
+										read(readChar,*,err=1531) readInt(1)
+										initialTemp(readInt(1)) = readReal(1)
+										goto 1539
+1531							        do i4 = 1, numNdSets
+                                            if(ndSetName(i4) .eq. readChar) then
+											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    i6 = nodeSets(i5)
+													initialTemp(i6) = readReal(1)
+												enddo
+											endif
+                                        enddo
+1539									i1 = index(fileLine,':')
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                i1 = index(fileLine,':')
+								enddo
+							elseif(fileLine(i1-14:i1) .eq. 'tempChangeRate:') then
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					            i1 = index(fileLine,':')
+								do while(i1 .eq. 0 .and. iosVal .eq. 0)
+								    i2 = index(fileLine,'[')
+									if(i2 .gt. 0) then
+									    i3 = index(fileLine,']')
+										read(fileLine(i2+1:i3-1),*) readChar, readReal(1:6)
+										read(readChar,*,err=1555) readInt(1)
+										initialTdot(readInt(1)) = readReal(1)
+										goto 1563
+1555							        do i4 = 1, numNdSets
+                                            if(ndSetName(i4) .eq. readChar) then
+											    do i5 = ndSetRange(i4-1) + 1, ndSetRange(i4)
+												    i6 = nodeSets(i5)
+													initialTdot(i6) = readReal(1)
+												enddo
+											endif
+                                        enddo
+1563									i1 = index(fileLine,':')
+									endif
+									read(1,'(A)',iostat=iosVal) fileLine(16:256)
+					                i1 = index(fileLine,':')
+								enddo
+							else
+							    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+							endif
+						else
+						    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+						endif
+						call findSubstrings(found,fileLine,subStrings,8)
+					enddo
+				else
+				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+				endif
+			else
+			    read(1,'(A)',iostat=iosVal) fileLine(16:256)
+			endif
+		enddo
+		
+		close(1)
+	    
+	end subroutine readInitialState
 	
 	subroutine readDesignVarInput(inFileName)
 	    implicit none
@@ -1166,7 +1655,6 @@ module AStrO_input
 		allocate(c_dVec(numDVar))
 		allocate(dLdD(numDVar))
 		allocate(dCategory(numDVar))
-		allocate(dSubCat(numDVar))
 		allocate(dComponent(numDVar))
 		allocate(dLayer(numDVar))
 		allocate(dActTime(2,numDVar))
@@ -1222,10 +1710,6 @@ module AStrO_input
 					read(fileLine(i1+1:i1+64),*) dCategory(dVarNum)
 					read(1,'(A)',iostat=iosVal) fileLine(16:256) 
 					i1 = index(fileLine,':')
-				elseif(fileLine(i1-11:i1) .eq. 'subCategory:') then
-				    read(fileLine(i1+1:i1+64),*) dSubCat(dVarNum)
-					read(1,'(A)',iostat=iosVal) fileLine(16:256)
-                    i1 = index(fileLine,':')
 				elseif(fileLine(i1-9:i1) .eq. 'component:') then
 				    read(fileLine(i1+1:i1+64),*) dComponent(dVarNum)
 					read(1,'(A)',iostat=iosVal) fileLine(16:256)
@@ -1734,6 +2218,65 @@ module AStrO_input
 		close(1622)
 		
 	end subroutine readNodeResults
+	
+	subroutine readAnyInput(fileName,commandTag)
+	    implicit none
+		
+		character(len=128), intent(in) :: fileName
+		character(len=32), intent(in) :: commandTag
+		
+		if(commandTag(1:15) .eq. '*readModelInput') then
+		    call readModelInput(fileName)
+			call readConstraints(fileName)
+			call readLoads(fileName)
+			call readInitialState(fileName)
+		elseif(commandTag(1:10) .eq. '*readLoads') then
+		    call readLoads(fileName)
+		elseif(commandTag(1:16) .eq. '*readConstraints') then
+		    call readConstraints(fileName)
+		elseif(commandTag(1:17) .eq. '*readInitialState') then
+		    call readInitialState(fileName)
+		elseif(commandTag(1:19) .eq. '*readDesignVarInput') then
+		    call readDesignVarInput(fileName)
+		elseif(commandTag(1:20) .eq. '*readDesignVarValues') then
+		    call readDesignVarValues(fileName)
+		elseif(commandTag(1:19) .eq. '*readObjectiveInput') then
+		    call readObjectiveInput(fileName)
+		elseif(commandTag(1:19) .eq. '*readNodeResults') then
+		    call readNodeResults(fileName)
+		endif
+		
+	end subroutine readAnyInput
+	
+	subroutine processReadCommand(jobUnit,fileLine,iosVal)
+	    implicit none
+		
+		integer, intent(in) :: jobUnit
+		character(len=256), intent(out) :: fileLine
+		integer, intent(out) :: iosVal
+	
+	    character(len=32) :: commandTag
+		character(len=128) :: inputFileName
+	    integer :: i1, i2
+	
+	    i1 = index(fileLine,'*')
+		commandTag = fileLine(i1:i1+31)
+	    read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		i1 = index(fileLine,'*')
+		do while(i1 .eq. 0 .and. iosVal .eq. 0)
+			i2 = index(fileLine,':')
+			if(i2 .gt. 0) then
+				if(fileLine(i2-8:i2) .eq. 'fileName:') then
+					read(fileLine(i2+1:i2+128),*) inputFileName
+					write(lfUnit,*) 'calling ', commandTag, 'file: ', inputFileName
+					call readAnyInput(inputFileName,commandTag)
+				endif
+			endif
+			read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+			i1 = index(fileLine,'*')
+		enddo
+	
+	end subroutine processReadCommand
 	
 !! Binary
 	

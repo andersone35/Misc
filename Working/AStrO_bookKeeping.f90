@@ -1133,7 +1133,6 @@ module AStrO_bookKeeping
 			deallocate(c_dVec)
 			deallocate(dLdD)
 			deallocate(dCategory)
-			deallocate(dSubCat)
 			deallocate(dComponent)
 			deallocate(dLayer)
 			deallocate(dActTime)
@@ -1179,6 +1178,7 @@ module AStrO_bookKeeping
 		if(allocated(eigenModes)) then
 	        deallocate(eigenModes)
 	        deallocate(eigenVals)
+			deallocate(eigenFactors)
 	        deallocate(diagMassMat)
 	    endif
 	

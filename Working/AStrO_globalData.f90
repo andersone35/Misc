@@ -62,7 +62,6 @@ module AStrO_globalData
 	real*8, allocatable :: r_dVec(:)
 	complex*16, allocatable :: c_dVec(:)
 	character(len=16), allocatable :: dCategory(:)
-	character(len=16), allocatable :: dSubCat(:)
 	integer, allocatable :: dComponent(:)
 	integer, allocatable :: dLayer(:)
 	real*8, allocatable :: dActTime(:,:)
@@ -120,6 +119,7 @@ module AStrO_globalData
 	
 	real*8, allocatable :: eigenModes(:,:)
 	real*8, allocatable :: eigenVals(:)
+	real*8, allocatable :: eigenFactors(:)
 	real*8, allocatable :: diagMassMat(:)
 	
 	real*8, allocatable :: elasticMat(:)
