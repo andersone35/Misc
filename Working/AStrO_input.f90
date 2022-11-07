@@ -2219,65 +2219,6 @@ module AStrO_input
 		
 	end subroutine readNodeResults
 	
-	subroutine readAnyInput(fileName,commandTag)
-	    implicit none
-		
-		character(len=128), intent(in) :: fileName
-		character(len=32), intent(in) :: commandTag
-		
-		if(commandTag(1:15) .eq. '*readModelInput') then
-		    call readModelInput(fileName)
-			call readConstraints(fileName)
-			call readLoads(fileName)
-			call readInitialState(fileName)
-		elseif(commandTag(1:10) .eq. '*readLoads') then
-		    call readLoads(fileName)
-		elseif(commandTag(1:16) .eq. '*readConstraints') then
-		    call readConstraints(fileName)
-		elseif(commandTag(1:17) .eq. '*readInitialState') then
-		    call readInitialState(fileName)
-		elseif(commandTag(1:19) .eq. '*readDesignVarInput') then
-		    call readDesignVarInput(fileName)
-		elseif(commandTag(1:20) .eq. '*readDesignVarValues') then
-		    call readDesignVarValues(fileName)
-		elseif(commandTag(1:19) .eq. '*readObjectiveInput') then
-		    call readObjectiveInput(fileName)
-		elseif(commandTag(1:19) .eq. '*readNodeResults') then
-		    call readNodeResults(fileName)
-		endif
-		
-	end subroutine readAnyInput
-	
-	subroutine processReadCommand(jobUnit,fileLine,iosVal)
-	    implicit none
-		
-		integer, intent(in) :: jobUnit
-		character(len=256), intent(out) :: fileLine
-		integer, intent(out) :: iosVal
-	
-	    character(len=32) :: commandTag
-		character(len=128) :: inputFileName
-	    integer :: i1, i2
-	
-	    i1 = index(fileLine,'*')
-		commandTag = fileLine(i1:i1+31)
-	    read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
-		i1 = index(fileLine,'*')
-		do while(i1 .eq. 0 .and. iosVal .eq. 0)
-			i2 = index(fileLine,':')
-			if(i2 .gt. 0) then
-				if(fileLine(i2-8:i2) .eq. 'fileName:') then
-					read(fileLine(i2+1:i2+128),*) inputFileName
-					write(lfUnit,*) 'calling ', commandTag, 'file: ', inputFileName
-					call readAnyInput(inputFileName,commandTag)
-				endif
-			endif
-			read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
-			i1 = index(fileLine,'*')
-		enddo
-	
-	end subroutine processReadCommand
-	
 !! Binary
 	
 	subroutine readBinarySolution(stepNum,errFlag)

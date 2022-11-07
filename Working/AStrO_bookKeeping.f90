@@ -791,6 +791,43 @@ module AStrO_bookKeeping
 		
 	end subroutine convertToLTri
 	
+	subroutine convertToFullPop(aFull,aSparse,aCols,aRange,aSize,aDim,cMat,cCols,cRange,cSize,cDim)
+	    implicit none
+		
+		integer, intent(in) :: aSize, aDim, cSize, cDim
+		integer, intent(in) :: aCols(aSize), aRange(0:aDim), cCols(cSize), cRange(0:cDim)
+		real*8, intent(in) :: aSparse(aSize), cMat(cSize)
+		real*8, intent(out) :: aFull(aDim,aDim)
+		
+		integer :: i1, i2, i3, i4, i5
+		
+		aFull(:,:) = r_0
+		
+		do i1 = 1, aDim
+		    do i2 = aRange(i1-1)+1, aRange(i1)
+			    i3 = aCols(i2)
+				if(i3 .ne. 0) then
+				    aFull(i1,i3) = aFull(i1,i3) + aSparse(i2)
+				endif
+			enddo
+		enddo
+		
+		do i1 = 1, cDim
+		    do i2 = cRange(i1-1)+1, cRange(i1)
+			    i4 = cCols(i2)
+				if(i4 .ne. 0) then
+					do i3 = cRange(i1-1)+1, cRange(i1)
+						i5 = cCols(i3)
+						if(i5 .ne. 0) then
+						    aFull(i4,i5) = aFull(i4,i5) +cMat(i2)*cMat(i3)
+						endif
+					enddo
+				endif
+			enddo
+		enddo
+		
+	end subroutine convertToFullPop
+	
 	subroutine analysisPrep()
 	    implicit none
 		

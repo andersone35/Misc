@@ -7,3 +7,13 @@
 *readObjectiveInput:
     fileName: shellBeamObjInput.yaml
 
+*solve:
+    elastic: yes
+	thermal: no
+    nonLinearGeom: no
+	dynamic: no
+	
+*writeNodeResults:
+    fileName: shellBeamNodeRes.yaml
+	fields:
+	    - displacement

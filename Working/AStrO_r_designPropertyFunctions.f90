@@ -308,9 +308,14 @@ module AStrO_r_designPropertyFunctions
 			SMat(2,2) = r_1/layerProps(2)
 			SMat(3,3) = r_1/layerProps(4)
 			SMat(2,1) = SMat(1,2)
+			! write(lfUnit,*) 'SMat: '
+			! write(lfUnit,*) SMat
 			call r_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
+			! write(lfUnit,*) 'QMat: '
+			! write(lfUnit,*) QMat
 			call r_cos(a11,layerProps(6))
             call r_sin(a21,layerProps(6))
+			! write(lfUnit,*) 'a11: ', a11, 'a21: ', a21
             a12 = -a21
             a22 = a11
             Ts(1,1) = a11*a11
@@ -325,7 +330,11 @@ module AStrO_r_designPropertyFunctions
             Te(:,:) = Ts(:,:)
             Te(:,3) = r_p5*Te(:,3)
             Te(3,:) = r_2*Te(3,:)
+			!write(lfUnit,*) 'Te: '
+			!write(lfUnit,*) Te
             call r_GetInvLU(TeInv,Te,fVec,zVec,3,1,3)
+			!write(lfUnit,*) 'TeInv: '
+			!write(lfUnit,*) TeInv
             Te(:,:) = r_0
             do i2 = 1, 3
 			    do i3 = 1, 3
@@ -961,7 +970,7 @@ module AStrO_r_designPropertyFunctions
 		integer :: i1, i2, i3, i4, i5, i6, check1, check2, nDof
 		
 		ndLd = r_0
-		do i2 = ndToDRange(i1-1)+1, ndToDRange(i1)
+		do i2 = ndToDRange(node-1)+1, ndToDRange(node)
 			i3 = ndToD(i2)
 			call r_greater(check1,time,r_1*dActTime(1,i3))
 			call r_greater(check2,r_1*dActTime(2,i3),time)

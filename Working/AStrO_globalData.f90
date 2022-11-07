@@ -122,6 +122,12 @@ module AStrO_globalData
 	real*8, allocatable :: eigenFactors(:)
 	real*8, allocatable :: diagMassMat(:)
 	
+	!! --------------------------
+	
+	real*8, allocatable :: aFull(:,:)
+	
+	!! --------------------------
+	
 	real*8, allocatable :: elasticMat(:)
 	integer, allocatable :: elMatCols(:)
 	integer, allocatable :: elMatRange(:)
@@ -192,7 +198,7 @@ module AStrO_globalData
 	
 !! Job utilities
 
-    integer :: lfUnit
+    integer :: lfUnit, abortJob
 	
 
 end module AStrO_globalData

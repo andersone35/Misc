@@ -182,6 +182,7 @@ contains
 		maxOutIt = maxIt/numVecs + 1
 		i4 = 0
 		
+		write(*,*) 'GMRes initial resMag: ', resMag, 'maxOutIt: ', maxOutIt
 		do while(resMag .gt. 1e-12 .and. i4 .lt. maxOutIt)
 		    hMat(:,1) = (r_1/resMag)*rVec(:)
 			h2Ah(:,:) = r_0

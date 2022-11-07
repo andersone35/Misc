@@ -92,7 +92,8 @@ module AStrO_r_overloadFunctions
 		
 		integer :: gt, i1
 		real*8 :: mapTheta1, mapTheta2
-	
+
+        mapTheta1 = theta	
 	    call r_greater(gt,theta,2d0*r_pi)
 	    if(gt .eq. 1) then
 		    i1 = abs(r_p5*theta/r_pi)

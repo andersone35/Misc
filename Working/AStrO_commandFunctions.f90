@@ -13,6 +13,65 @@ module AStrO_commandFunctions
 	
 	contains
 	
+	subroutine readAnyInput(fileName,commandTag)
+	    implicit none
+		
+		character(len=128), intent(in) :: fileName
+		character(len=32), intent(in) :: commandTag
+		
+		if(commandTag(1:15) .eq. '*readModelInput') then
+		    call readModelInput(fileName)
+			call readConstraints(fileName)
+			call readLoads(fileName)
+			call readInitialState(fileName)
+		elseif(commandTag(1:10) .eq. '*readLoads') then
+		    call readLoads(fileName)
+		elseif(commandTag(1:16) .eq. '*readConstraints') then
+		    call readConstraints(fileName)
+		elseif(commandTag(1:17) .eq. '*readInitialState') then
+		    call readInitialState(fileName)
+		elseif(commandTag(1:19) .eq. '*readDesignVarInput') then
+		    call readDesignVarInput(fileName)
+		elseif(commandTag(1:20) .eq. '*readDesignVarValues') then
+		    call readDesignVarValues(fileName)
+		elseif(commandTag(1:19) .eq. '*readObjectiveInput') then
+		    call readObjectiveInput(fileName)
+		elseif(commandTag(1:19) .eq. '*readNodeResults') then
+		    call readNodeResults(fileName)
+		endif
+		
+	end subroutine readAnyInput
+	
+	subroutine processReadCommand(jobUnit,fileLine,iosVal)
+	    implicit none
+		
+		integer, intent(in) :: jobUnit
+		character(len=256), intent(out) :: fileLine
+		integer, intent(out) :: iosVal
+	
+	    character(len=32) :: commandTag
+		character(len=128) :: inputFileName
+	    integer :: i1, i2
+	
+	    i1 = index(fileLine,'*')
+		commandTag = fileLine(i1:i1+31)
+	    read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		i1 = index(fileLine,'*')
+		do while(i1 .eq. 0 .and. iosVal .eq. 0)
+			i2 = index(fileLine,':')
+			if(i2 .gt. 0) then
+				if(fileLine(i2-8:i2) .eq. 'fileName:') then
+					read(fileLine(i2+1:i2+128),*) inputFileName
+					write(lfUnit,*) 'calling ', commandTag, 'file: ', inputFileName
+					call readAnyInput(inputFileName,commandTag)
+				endif
+			endif
+			read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+			i1 = index(fileLine,'*')
+		enddo
+	
+	end subroutine processReadCommand
+	
 	subroutine getThermalSolnLoad(buildMat)
 	    implicit none
 		
@@ -282,6 +341,32 @@ module AStrO_commandFunctions
 				ABD, sMass, stExp, stCond, ssHeat, &
 				bStiff, bMass, btExp, btCond, bsHeat, &
 				temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
+			!! -------------------
+			! if(i1 .eq. 1) then
+			    ! write(lfUnit,*) 'first element data'
+				! write(lfUnit,*) 'numNds: ', numNds, 'dofPerNd: ', dofPerNd, 'numIntDof: ', numIntDof, 'numIntPts: ', numIntPts
+				! write(lfUnit,*) 'intPts: '
+				! write(lfUnit,*) intPts
+				! write(lfUnit,*) 'ipWt'
+				! write(lfUnit,*) ipWt
+			    ! write(lfUnit,*) 'locNds: '
+				! write(lfUnit,*) locNds
+				! write(lfUnit,*) 'globNds: '
+				! write(lfUnit,*) globNds
+				! write(lfUnit,*) 'orient: '
+				! write(lfUnit,*) orient
+				! write(lfUnit,*) 'ABD: '
+				! write(lfUnit,*) ABD
+				! write(lfUnit,*) 'stExp: '
+				! write(lfUnit,*) stExp
+				! write(lfUnit,*) 'temp: '
+				! write(lfUnit,*) temp
+				! write(lfUnit,*) 'disp: '
+				! write(lfUnit,*) disp
+				! close(lfUnit)
+				! open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+			! endif
+			!! ----------------------------
 			eType = elementType(i1)
 			statRot(:) = r_0
 			do i2 = 1, numNds
@@ -308,6 +393,17 @@ module AStrO_commandFunctions
 				intElasticLoad(i4:i5) = intElasticLoad(i4:i5) - Ru(i3+1:i3+numIntDof)
 			endif
 			if(buildMat .eq. 1) then
+			    ! -------------------
+			    ! if(i1 .eq. 1) then
+					! write(lfUnit,*) 'first element elastic matrix:'
+					! i3 = numNds*dofPerNd + numIntDof
+					! do i2 = 1, i3
+						! write(lfUnit,*) dRdU(1:i3,i2)
+					! enddo
+					! close(lfUnit)
+					! open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+				! endif
+				! ---------------------
 				if(numIntDof .gt. 0) then
 					i2 = numNds*dofPerNd + 1
 					i3 = numNds*dofPerNd + numIntDof
@@ -320,6 +416,40 @@ module AStrO_commandFunctions
 						enddo
 					enddo
 				endif
+				!! ---------------
+				! if(i1 .eq. 1) then
+					! dRdU(1,1) = 10000d0*dRdU(1,1)
+					! dRdU(4,4) = 10000d0*dRdU(4,4)
+					! dRdU(5,5) = 10000d0*dRdU(5,5)
+					! dRdU(8,8) = 10000d0*dRdU(8,8)
+					! dRdU(9,9) = 10000d0*dRdU(9,9)
+					! dRdU(12,12) = 10000d0*dRdU(12,12)
+					! dRdU(13,13) = 10000d0*dRdU(13,13)
+					! dRdU(16,16) = 10000d0*dRdU(16,16)
+					! dRdU(17,17) = 10000d0*dRdU(17,17)
+					! dRdU(20,20) = 10000d0*dRdU(20,20)
+					! dRdU(21,21) = 10000d0*dRdU(21,21)
+					! dRdU(24,24) = 10000d0*dRdU(24,24)
+					! bVec(:) = r_0
+					! bVec(2) = r_1
+					! bVec(3) = r_1
+					! resVec(:) = r_0
+					! write(lfUnit,*) 'first el mat:'
+					! do i2 = 1, 24
+					    ! write(lfUnit,*) dRdU(1:24,i2)
+					! enddo
+					! call rFactorMat(dRdU(1:24,1:24),24,24,0)
+					! write(lfUnit,*) 'factored first el:'
+					! do i2 = 1, 24
+					    ! write(lfUnit,*) dRdU(1:24,i2)
+					! enddo
+					! call solveRFactor(resVec(1:24),dRdU(1:24,1:24),bVec(1:24),24,24,0)
+					! write(lfUnit,*) 'single el result:'
+					! do i2 = 1, numNds
+					    ! write(lfUnit,*) resVec(i2), resVec(i2+4), resVec(i2+8), resVec(i2+12), resVec(i2+16), resVec(i2+20)
+					! enddo
+				! endif
+				!! -------------------
 				i2 = numNds*dofPerNd
 				do i3 = 1, i2
 					i5 = dofTable(1,i3)
@@ -362,10 +492,20 @@ module AStrO_commandFunctions
 		character(len=16) :: lt
 		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10
 		
+		write(lfUnit,*) 'building elastic applied load'
+		!close(lfUnit)
+		!open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+		
 		do i1 = 1, numLds
 		    if(time .ge. loadsActTime(1,i1) .and. time .le. loadsActTime(2,i1)) then
 			    lt = loadType(i1)
 			    if(lt .eq. 'nodal') then
+				    write(lfUnit,*) 'building nodal load'
+					write(lfUnit,*) 'numNdSets: ', numNdSets
+					write(lfUnit,*) 'nDofIndex: '
+					write(lfUnit,*) nDofIndex
+				    close(lfUnit)
+			        open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 					do i2 = loadsRange(i1-1) + 1, loadsRange(i1)
 						read(loadNodes(i2),*,err=67) i3
 						do i4 = 1, 6
@@ -377,6 +517,9 @@ module AStrO_commandFunctions
 						goto 75
 67                      do i4 = 1, numNdSets
 							if(ndSetName(i4) .eq. loadNodes(i2)) then
+							    write(lfUnit,*) 'applying to node set ', ndSetName(i4)
+						        close(lfUnit)
+						        open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 								do i5 = ndSetRange(i4-1)+1, ndSetRange(i4)
 									i6 = nodeSets(i5)
 									do i7 = 1, 6
@@ -491,6 +634,10 @@ module AStrO_commandFunctions
 			endif
 		enddo
 		
+		write(lfUnit,*) 'building elastic dVar load'
+		!close(lfUnit)
+		!open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+		
 		do i2 = 1, numNodes
 		    call r_getNodeDLoad(time,ndLd,i2)
 			do i3 = 1, 6
@@ -500,6 +647,10 @@ module AStrO_commandFunctions
 				endif
 			enddo
 		enddo
+		
+		write(lfUnit,*) 'finished building elastic applied load'
+		close(lfUnit)
+	    open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 		
 	end subroutine getElasticAppliedLoad
 	
@@ -898,18 +1049,41 @@ module AStrO_commandFunctions
 			    elasticLoad(:) = r_0
 				intElasticLoad(:) = r_0
 			    call getElasticSolnLoad(nLGeom)
+				write(lfUnit,*) 'finished building elastic solution load'
+				!close(lfUnit)
+			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				call getElasticAppliedLoad(time)
+				write(lfUnit,*) 'finished building elastic applied load'
+				!close(lfUnit)
+			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				call getElasticConstraintLoad()
+				write(lfUnit,*) 'finished building elastic constraint load'
+				write(lfUnit,*) 'elasticLoad:'
+				do i2 = 1, elMatDim
+				    write(lfUnit,*) elasticLoad(i2)
+				enddo
+				!close(lfUnit)
+			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				if(nLGeom .ne. 0) then
 					call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
 						 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
 					call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
 				endif
+				write(lfUnit,*) 'finished factoring'
+				!close(lfUnit)
+			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				if(intVecSize .gt. 0) then
 				    call updateExternalRHS(elasticLoad,elMatDim,intElasticLoad,intVecSize)
+					write(lfUnit,*) 'finished updating external RHS'
+				    close(lfUnit)
+			        open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				endif
-				call gMRes(delDisp,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat,elMPCMatCols, &
-				    elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,elasticLoad,numVecs,elMatDim)
+				write(lfUnit,*) 'calling gMRes, elastic solution'
+			    !close(lfUnit)
+			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+				!call gMRes(delDisp,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat,elMPCMatCols, &
+				!    elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,elasticLoad,numVecs,elMatDim)
+				call solveRFactor(delDisp,aFull,elasticLoad,elMatDim,elMatDim,0)
 				if(intVecSize .gt. 0) then
 				    call updateInternalSoln(delDisp,elMatDim,internalDisp,intElasticLoad,intVecSize)
 				endif
@@ -930,12 +1104,17 @@ module AStrO_commandFunctions
 	subroutine solve()
 	    implicit none
 		
+		character(len=128) :: outfileName
 		real*8 :: time, c1, c2
 		integer :: i1, i2
 		
 		if(.not. allocated(currentRank)) then
 		    call analysisPrep()
 		endif
+		
+		write(lfUnit,*) 'finished analysisPrep'
+		close(lfUnit)
+		open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 		
 		call loadInitialState()
 		
@@ -949,11 +1128,42 @@ module AStrO_commandFunctions
 		
 		if(solveElastic .eq. 1) then
 		    call getElasticSolnLoad(1)
+			write(lfUnit,*) 'finished building elastic matrix'
+			close(lfUnit)
+			open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 			call scaleElasticMPC()
 			if(nLGeom .eq. 0) then
-				call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
-					 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
-				call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
+			    !! --------------------------
+				outfileName = 'sparseStiffness.txt'
+				call writeSparseMatrix(outfileName,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim)
+				outfileName = 'elasticMPC.txt'
+				call writeSparseMatrix(outfileName,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+				!! ---------------------------------
+				
+				! call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
+					 ! elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+			    allocate(aFull(elMatDim,elMatDim))
+			    call convertToFullPop(aFull,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat, &
+				    elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+				
+				!! ------------------------
+				!outfileName = 'elasticLTStiffess.txt'
+				!call writeLowerTriMatrix(outfileName,elMatLT,elMatLTRange,elMatLTSize,elMatDim)
+				!! -------------------------
+				
+				!call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
+				
+				call rFactorMat(aFull,elMatDim,elMatDim,0)
+				
+				write(lfUnit,*) 'Factored diagonal terms: '
+				do i1 = 1, elMatDim
+				    write(lfUnit,*) aFull(i1,i1)
+				enddo
+				
+				!! ------------------------
+				!outfileName = 'elasticLTFactored.txt'
+				!call writeLowerTriMatrix(outfileName,elMatLT,elMatLTRange,elMatLTSize,elMatDim)
+				!! -------------------------
 			endif
 		endif
 		
@@ -993,13 +1203,15 @@ module AStrO_commandFunctions
 			numTSteps = i1
 		endif
 		
+		deallocate(aFull)
+		
 	end subroutine solve
 	
 	subroutine getCompleteObjective()
 	    implicit none
 		
 		real*8 :: time
-		integer :: i1, i2, i3
+		integer :: i1, i2, i3, errFlag
 		
 		objVal = r_0
 		
@@ -1020,7 +1232,7 @@ module AStrO_commandFunctions
 				endif
 				nodeVel(:) = prevVel(:)
 				nodeAcc(:) = prevAcc(:)
-				readBinarySolution(i1,errFlag)
+				call readBinarySolution(i1,errFlag)
 				if(errFlag .eq. 1) then
 				   goto 896
 				endif
@@ -1683,5 +1895,373 @@ module AStrO_commandFunctions
 		endif
 		
 	end subroutine getTotaldLdD
+	
+	subroutine processWriteNodeEl(jobUnit,fileLine,iosVal)
+	    implicit none
+		
+		integer, intent(in) :: jobUnit
+		character(len=256), intent(out) :: fileLine
+		integer, intent(out) :: iosVal
+		
+		integer, allocatable :: allNdSet(:), allElSet(:), writeTSteps(:)
+		
+		character(len=32) :: commandTag
+		character(len=128) :: outputFileName, fullFileName
+		
+		character(len=64) :: writeFields(10)
+	    character(len=16) :: extension, stepStr
+		real*8 :: time
+		
+		integer :: nSInd, eSInd, numFields, readInt(3)
+		integer :: i1, i2, i3, i4, i5, i6, i7, errFlag
+		
+		i1 = index(fileLine,'*')
+		commandTag = fileLine(i1:i1+31)
+		read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		i1 = index(fileLine,'*')
+		numFields = 0
+		nSInd = 0
+		eSInd = 0
+		do while(i1 .eq. 0 .and. iosVal .eq. 0)
+			i2 = index(fileLine,':')
+			if(i2 .gt. 0) then
+				if(fileLine(i2-8:i2) .eq. 'fileName:') then
+					read(fileLine(i2+1:i2+128),*) outputFileName
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+					i1 = index(fileLine,'*')
+				elseif(fileLine(i2-7:i2) .eq. 'nodeSet:') then
+					do i3 = 1, numNdSets
+						i4 = index(fileLine,ndSetName(i3))
+						if(i4 .gt. 0) then
+							nSInd = i3
+						endif
+					enddo
+					if(nSInd .eq. 0) then
+						write(lfUnit,*) 'Warning: no node set named ', fileLine(i2+1:i2+64), 'was found'
+						write(lfUnit,*) 'Writing results for all nodes'
+					endif
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+					i1 = index(fileLine,'*')
+				elseif(fileLine(i2-10:i2) .eq. 'elementSet:') then
+				    do i3 = 1, numElSets
+						i4 = index(fileLine,elSetName(i3))
+						if(i4 .gt. 0) then
+							eSInd = i3
+						endif
+					enddo
+					if(eSInd .eq. 0) then
+						write(lfUnit,*) 'Warning: no element set named ', fileLine(i2+1:i2+64), 'was found'
+						write(lfUnit,*) 'Writing results for all elements'
+					endif
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+					i1 = index(fileLine,'*')
+				elseif(fileLine(i2-6:i2) .eq. 'fields:') then
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+					i2 = index(fileLine,':')
+					do while(i2 .eq. 0 .and. iosVal .eq. 0)
+						i3 = index(fileLine,'-')
+						if(i3 .gt. 0) then
+							numFields = numFields + 1
+							read(fileLine(i3+1:i3+64),*) writeFields(numFields)
+							if(writeFields(numFields) .eq. 'reactionForce') then
+								elasticLoad(:) = r_0
+								if(intVecSize .gt. 0) then
+									intElasticLoad(:) = r_0
+								endif
+								call getElasticSolnLoad(0)
+							endif
+							if(writeFields(numFields) .eq. 'reactionHeatGen') then
+								thermalLoad(:) = r_0
+								call getThermalSolnLoad(0)
+							endif
+						endif
+						read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+						i2 = index(fileLine,':')
+					enddo
+					i1 = index(fileLine,'*')
+				elseif(fileLine(i2-9:i2) .eq. 'timeSteps:') then
+					if(numTSteps .le. 0) then
+						write(lfUnit,*) 'Error: A dynamic analysis must be run prior to writing time step dependent results.'
+						write(lfUnit,*) 'Aborting ', commandTag
+						goto 251
+					endif
+					if(.not. allocated(writeTSteps)) then
+						allocate(writeTSteps(numTSteps))
+					endif
+					writeTSteps(:) = 0
+					i3 = index(fileLine,'all')
+					if(i3 .gt. 0) then
+						writeTSteps(:) = 1
+						read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+						i1 = index(fileLine,'*')
+					else
+						read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+						i2 = index(fileLine,':')
+						do while(i2 .eq. 0 .and. iosVal .eq. 0)
+							i3 = index(fileLine, '-')
+							if(i3 .gt. 0) then
+								i4 = index(fileLine,'[')
+								if(i4 .gt. 0) then
+									i5 = index(fileLine,']')
+									readInt(3) = 1
+									read(fileLine(i4+1:i5-1),*,end=254) readInt(1:3)
+254                                 do i6 = readInt(1), readInt(2), readInt(3)
+										if(i6 .le. numTSteps .and. i6 .gt. 0) then
+											writeTSteps(i6) = 1
+										else
+											write(lfUnit,*) 'Error: a time step specified for writeNodeResults is out of'
+											write(lfUnit,*) 'the simulated range.  Aborting ', commandTag
+											goto 251
+										endif
+									enddo
+								else
+									read(fileLine(i3+1:i3+64),*) i5
+									if(i5 .le. numTSteps .and. i5 .gt. 0) then
+										writeTSteps(i5) = 1
+									else
+										write(lfUnit,*) 'Error: a time step specified for writeNodeResults is out of'
+										write(lfUnit,*) 'the simulated range.  Aborting ', commandTag
+										goto 251
+									endif
+								endif
+							endif
+							read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+							i1 = index(fileLine,'*')
+							i2 = index(fileLine,':')
+						enddo
+					endif
+				else
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+					i1 = index(fileLine,'*')
+				endif
+			endif
+		enddo
+		if(.not. allocated(writeTSteps)) then
+		    if(commandTag(1:17) .eq. '*writeNodeResults') then
+				if(nSInd .eq. 0) then
+					if(.not. allocated(allNdSet)) then
+						allocate(allNdSet(numNodes))
+					endif
+					do i3 = 1, numNodes
+						allNdSet(i3) = i3
+					enddo
+					time = numTSteps*delT
+					call writeNodeResults(outputFileName,writeFields,numFields,allNdSet,numNodes,time,numTSteps)
+				else
+					i3 = ndSetRange(nSInd-1) + 1
+					i4 = ndSetRange(nSInd)
+					i5 = i4 - i3 + 1
+					time = numTSteps*delT
+					call writeNodeResults(outputFileName,writeFields,numFields,nodeSets(i3:i4),i5,time,numTSteps)
+				endif
+			else
+				if(eSInd .eq. 0) then
+					if(.not. allocated(allElSet)) then
+						allocate(allElSet(numEls))
+					endif
+					do i3 = 1, numEls
+						allElSet(i3) = i3
+					enddo
+					time = numTSteps*delT
+					call writeElementResults(outputFileName,writeFields,numFields,allElSet,numEls,time,numTSteps)
+				else
+					i3 = elSetRange(eSInd-1) + 1
+					i4 = elSetRange(eSInd)
+					i5 = i4 - i3 + 1
+					time = numTSteps*delT
+					call writeElementResults(outputFileName,writeFields,numFields,elementSets(i3:i4),i5,time,numTSteps)
+				endif
+			endif
+		else
+			do i6 = 1, numTSteps
+				if(writeTSteps(i6) .eq. 1) then
+					call readBinarySolution(i6,errFlag)
+					if(errFlag .eq. 0) then
+						nodeTemp = prevTemp(:)
+						nodeTdot = prevTdot(:)
+						nodeDisp = prevDisp(:)
+						if(intVecSize .ge. 1) then
+							internalDisp(:) = prevIntDisp(:)
+						endif
+						nodeVel(:) = prevVel(:)
+						nodeAcc(:) = prevAcc(:)
+						write(stepStr,'(I0)') i6
+						i7 = index(outputFileName,'.')
+						if(i7 .gt. 0) then
+							read(outputFileName(i7:i7+15),*) extension
+							read(outputFileName(1:i7-1),*) fullFileName
+							outputFileName = fullFileName
+						else
+							extension = ''
+						endif
+						fullFileName = outputFileName // '_step' // stepStr // extension
+						if(commandTag(1:17) .eq. '*writeNodeResults') then
+							if(nSInd .eq. 0) then
+								if(.not. allocated(allNdSet)) then
+									allocate(allNdSet(numNodes))
+								endif
+								do i3 = 1, numNodes
+									allNdSet(i3) = i3
+								enddo
+								time = numTSteps*delT
+								call writeNodeResults(fullFileName,writeFields,numFields,allNdSet,numNodes,time,numTSteps)
+							else
+								i3 = ndSetRange(nSInd-1) + 1
+								i4 = ndSetRange(nSInd)
+								i5 = i4 - i3 + 1
+								time = numTSteps*delT
+								call writeNodeResults(fullFileName,writeFields,numFields,nodeSets(i3:i4),i5,time,numTSteps)
+							endif
+						else
+							if(eSInd .eq. 0) then
+								if(.not. allocated(allElSet)) then
+									allocate(allElSet(numEls))
+								endif
+								do i3 = 1, numEls
+									allElSet(i3) = i3
+								enddo
+								time = numTSteps*delT
+								call writeElementResults(fullFileName,writeFields,numFields,allElSet,numEls,time,numTSteps)
+							else
+								i3 = elSetRange(eSInd-1) + 1
+								i4 = elSetRange(eSInd)
+								i5 = i4 - i3 + 1
+								time = numTSteps*delT
+								call writeElementResults(fullFileName,writeFields,numFields,elementSets(i3:i4),i5,time,numTSteps)
+							endif
+						endif
+					else
+						write(lfUnit,*) 'Error: time step ', i6, ' was never recorded in the solution history.'
+						write(lfUnit,*) 'Be sure to set the saveSolnHist option to yes under the *solve command'
+						write(lfUnit,*) 'if the objective gradient or time-specific intermediate results are desired'
+						write(lfUnit,*) 'for a dynamic analysis.'
+					endif
+				endif
+			enddo
+			deallocate(writeTSteps)
+		endif
+		if(allocated(allNdSet)) then
+			deallocate(allNdSet)
+		endif
+		if(allocated(allElSet)) then
+		    deallocate(allElSet)
+		endif
+251		i1 = index(fileLine,'*')
+		
+	end subroutine processWriteNodeEl
+	
+	subroutine processWriteNdElProps(jobUnit,fileLine,iosVal)
+	    implicit none
+		
+		integer, intent(in) :: jobUnit
+		character(len=256), intent(out) :: fileLine
+		integer, intent(out) :: iosVal
+		
+		integer, allocatable :: allNdSet(:), allElSet(:)
+		character(len=16) :: propList(32)
+		character(len=128) :: fileName
+		character(len=64) :: setName
+		integer :: i1, i2, i3, i4, i5, nSInd, eSInd, numProps, wtNd
+		
+		i1 = index(fileLine,'*')
+		if(fileLine(i1:i1+20) .eq. '*writeNodeCoordinates') then
+		    wtNd = 1
+		else
+		    wtNd = 0
+		endif
+		
+		numProps = 0
+		nSInd = 0
+		eSInd = 0
+		
+		read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		i1 = index(fileLine,'*')
+		do while(i1 .eq. 0 .and. iosVal .eq. 0)
+		    i2 = index(fileLine,':')
+			if(i2 .gt. 0) then
+			    if(fileLine(i2-8:i2) .eq. 'fileName:') then
+				    read(fileLine(i2+1:i2+128),*) fileName
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		            i1 = index(fileLine,'*')
+				elseif(fileLine(i2-7:i2) .eq. 'nodeSet:') then
+				    read(fileLine(i2+1:i2+64),*) setName
+					do i3 = 1, numNdSets
+					    if(setName .eq. ndSetName(i3)) then
+						    nSInd = i3
+						endif
+					enddo
+					if(nSInd .eq. 0) then
+					    write(lfUnit,*) 'Warning: there is no node set with the name ', setName
+						write(lfUnit,*) 'Writing coordinates of all nodes.'
+					endif
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		            i1 = index(fileLine,'*')
+				elseif(fileLine(i2-10:i2) .eq. 'elementSet:') then
+				    read(fileLine(i2+1:i2+64),*) setName
+					do i3 = 1, numElSets
+					    if(setName .eq. elSetName(i3)) then
+						    eSInd = i3
+						endif
+					enddo
+					if(eSInd .eq. 0) then
+					    write(lfUnit,*) 'Warning: there is no element set with the name ', setName
+						write(lfUnit,*) 'Writing properties of all elements.'
+					endif
+					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		            i1 = index(fileLine,'*')
+				elseif(fileLine(i2-10:i2) .eq. 'properties:') then
+				    read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		            i1 = index(fileLine,'*')
+					i2 = index(fileLine,':')
+					do while(i2 .eq. 0 .and. iosVal .eq. 0)
+					    i3 = index(fileLine,'-')
+						if(i3 .gt. 0) then
+						    numProps = numProps + 1
+							read(fileLine(i3+1:i3+16),*) propList(numProps)
+						endif
+						read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+						i2 = index(fileLine,':')
+					enddo
+					i1 = index(fileLine,'*')
+				else
+				    read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		            i1 = index(fileLine,'*')
+				endif
+			else
+			    read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
+		        i1 = index(fileLine,'*')
+			endif
+		enddo
+		if(wtNd .eq. 1) then
+		    if(nSInd .eq. 0) then
+			    allocate(allNdSet(numNodes))
+				do i3 = 1, numNodes
+				    allNdSet(i3) = i3
+				enddo
+				call writeNodeCoord(fileName,allNdSet,numNodes)
+				deallocate(allNdSet)
+			else
+			    i3 = ndSetRange(nSInd-1) + 1
+				i4 = ndSetRange(nSInd)
+				i5 = i4 - i3 + 1
+				call writeNodeCoord(fileName,nodeSets(i3:i4),i5)
+			endif
+		else
+		    if(eSInd .eq. 0) then
+			    allocate(allElSet(numEls))
+				do i3 = 1, numEls
+				    allElSet(i3) = i3
+				enddo
+				call writeElProperties(fileName,allElSet,numEls,propList,numProps)
+				deallocate(allElSet)
+			else
+			    i3 = elSetRange(eSInd-1) + 1
+				i4 = elSetRange(eSInd)
+				i5 = i4 - i3 + 1
+				call writeElProperties(fileName,elementSets(i3:i4),i5,propList,numProps)
+			endif
+		endif
+		
+	end subroutine processWriteNdElProps
 	
 end module AStrO_commandFunctions

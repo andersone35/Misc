@@ -477,23 +477,26 @@ module AStrO_r_elementEqns
 			enddo
 		enddo
 		
-	    call r_getMaterialStiffness(cMat,elNum)
-		call r_getMaterialDensity(den,elNum)
-		call r_getMaterialThermExp(tExp,elNum)
-		call r_getMaterialThermCond(tCond,elNum)
-		call r_getMaterialSpecHeat(sHeat,elNum)
+		if(eType .eq. 2) then
+			call r_getBeamStiffness(bStiff,elNum)
+			call r_getBeamMass(bMass,elNum)
+			call r_getBeamExpLoad(bTELd,elNum)
+			call r_getBeamTCond(btCond,elNum)
+			call r_getBeamSpecHeat(bsHeat,elNum)
+		elseif(eType .eq. 41 .or. eType .eq. 3) then
+			call r_getShellStiffness(ABD,elNum)
+			call r_getShellMass(sMass,elNum)
+			call r_getShellExpLoad(sTELd,elNum)
+			call r_getShellThermCond(stCond,elNum)
+			call r_getShellSpecHeat(ssHeat,elNum)
+        else	
+			call r_getMaterialStiffness(cMat,elNum)
+			call r_getMaterialDensity(den,elNum)
+			call r_getMaterialThermExp(tExp,elNum)
+			call r_getMaterialThermCond(tCond,elNum)
+			call r_getMaterialSpecHeat(sHeat,elNum)
+		endif
 		
-		call r_getShellStiffness(ABD,elNum)
-		call r_getShellMass(sMass,elNum)
-		call r_getShellExpLoad(sTELd,elNum)
-		call r_getShellThermCond(stCond,elNum)
-		call r_getShellSpecHeat(ssHeat,elNum)
-		
-		call r_getBeamStiffness(bStiff,elNum)
-		call r_getBeamMass(bMass,elNum)
-		call r_getBeamExpLoad(bTELd,elNum)
-		call r_getBeamTCond(btCond,elNum)
-		call r_getBeamSpecHeat(bsHeat,elNum)
 		
 	end subroutine r_getElementProperties
 	
@@ -1405,10 +1408,8 @@ module AStrO_r_elementEqns
 		    area = beamProperties(1,i4)
 		    do i1 = elToDRange(elNum-1)+1, elToDRange(elNum)
 			    i2 = elToD(i1)
-				if(dCategory(i2) .eq. 'beamProperties') then
-				    if(dSubCat(i2) .eq. 'area') then
-					    area = area + elToCoef(i1)*r_dVec(i2)
-					endif
+				if(dCategory(i2) .eq. 'area') then
+					area = area + elToCoef(i1)*r_dVec(i2)
 				endif
 			enddo
 		endif
@@ -1456,10 +1457,8 @@ module AStrO_r_elementEqns
 			layerThick = r_1*layupThickness(i1)
 			do i2 = elToDRange(elNum-1)+1, elToDRange(elNum)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. i4) then
-					if(dSubCat(i3) .eq. 'thickness') then
-					    layerThick = layerThick + elToCoef(i2)*r_dVec(i3)
-					endif
+			    if(dCategory(i3) .eq. 'thickness' .and. dLayer(i3) .eq. i4) then
+					layerThick = layerThick + elToCoef(i2)*r_dVec(i3)
 				endif
 			enddo
 			zNext = zCrd + layerThick
@@ -1480,18 +1479,18 @@ module AStrO_r_elementEqns
 		layerProps(6) = r_1*layupAngle(i1)
 		do i2 = elToDRange(elNum-1)+1, elToDRange(elNum)
 			i3 = elToD(i2)
-			if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layerNum) then
-				if(dSubCat(i3) .eq. 'modulus') then
+			if(dLayer(i3) .eq. layerNum) then
+				if(dCategory(i3) .eq. 'modulus') then
 					i4 = dComponent(i3)
 					layerProps(i4) = layerProps(i4) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'poissonRatio') then
+				elseif(dCategory(i3) .eq. 'poissonRatio') then
 					layerProps(3) = layerProps(3) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'shearModulus') then
+				elseif(dCategory(i3) .eq. 'shearModulus') then
 					layerProps(4) = layerProps(4) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'thermalExp') then
+				elseif(dCategory(i3) .eq. 'thermalExp') then
 				    i4 = dComponent(i3)
 					tExp(i4) = tExp(i4) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'angle') then
+				elseif(dCategory(i3) .eq. 'angle') then
 					layerProps(6) = layerProps(6) + elToCoef(i2)*r_dVec(i3)
 				endif
 			endif
@@ -1573,8 +1572,8 @@ module AStrO_r_elementEqns
 			layerThick = r_1*layupThickness(i1)
 			do i2 = elToDRange(elNum-1)+1, elToDRange(elNum)
 			    i3 = elToD(i2)
-			    if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. i4) then
-					if(dSubCat(i3) .eq. 'thickness') then
+			    if(dLayer(i3) .eq. i4) then
+					if(dCategory(i3) .eq. 'thickness') then
 					    layerThick = layerThick + elToCoef(i2)*r_dVec(i3)
 					endif
 				endif
@@ -1597,18 +1596,18 @@ module AStrO_r_elementEqns
 		layerProps(6) = r_1*layupAngle(i1)
 		do i2 = elToDRange(elNum-1)+1, elToDRange(elNum)
 			i3 = elToD(i2)
-			if(dCategory(i3) .eq. 'layup' .and. dLayer(i3) .eq. layer) then
-				if(dSubCat(i3) .eq. 'modulus') then
+			if(dLayer(i3) .eq. layer) then
+				if(dCategory(i3) .eq. 'modulus') then
 					i4 = dComponent(i3)
 					layerProps(i4) = layerProps(i4) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'poissonRatio') then
+				elseif(dCategory(i3) .eq. 'poissonRatio') then
 					layerProps(3) = layerProps(3) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'shearModulus') then
+				elseif(dCategory(i3) .eq. 'shearModulus') then
 					layerProps(4) = layerProps(4) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'thermalExp') then
+				elseif(dCategory(i3) .eq. 'thermalExp') then
 				    i4 = dComponent(i3)
 					tExp(i4) = tExp(i4) + elToCoef(i2)*r_dVec(i3)
-				elseif(dSubCat(i3) .eq. 'angle') then
+				elseif(dCategory(i3) .eq. 'angle') then
 					layerProps(6) = layerProps(6) + elToCoef(i2)*r_dVec(i3)
 				endif
 			endif
@@ -2222,7 +2221,7 @@ module AStrO_r_elementEqns
 		real*8 :: shDef(9), shFrcMom(9), beamDef(6), beamFrcMom(6), ux(3,3), rx(3,3)
 		real*8 :: dfmdT(9,10), dsdT(6,10)
 		real*8 :: duxdR(3,9)
-		real*8 :: ptTemp, teProd
+		real*8 :: ptTemp, teProd, r3Fact
 		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, nd1, var1, nd2, var2
 		
 		if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
@@ -2529,6 +2528,34 @@ module AStrO_r_elementEqns
 				endif
 			endif
 		enddo
+		
+		if(eType .eq. 41 .or. eType .eq. 3) then
+            r3Fact = r_0
+			i3 = numNds*dofPerNd
+			do i1 = 1, i3
+			    i2 = dofTable(1,i1)
+				if(i2 .eq. 6) then
+				    r3Fact = r3Fact + r_1*abs(dRdU(i1,i1))
+				endif
+			enddo
+			nnReal = numNds
+			r3Fact = 0.01d0*r3Fact/nnReal
+			do i1 = 1, i3
+			    i2 = dofTable(1,i1)
+				if(i2 .eq. 6) then
+				    do i4 = 1, i3
+					    i5 = dofTable(1,i4)
+						if(i5 .eq. 6) then
+						    if(i1 .eq. i4) then
+							    dRdU(i1,i4) = dRdU(i1,i4) + (numNds-1)*r3Fact
+							else
+							    dRdU(i1,i4) = dRdU(i1,i4) - r3Fact
+							endif
+						endif
+					enddo
+				endif
+			enddo
+		endif
 		
 	end subroutine r_getElRuk
 	
