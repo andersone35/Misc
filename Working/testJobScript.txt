@@ -12,8 +12,17 @@
 	thermal: no
     nonLinearGeom: no
 	dynamic: no
+	solverMethod: direct
 	
+*modalAnalysis:
+    type: buckling
+	numModes: 8
+
 *writeNodeResults:
     fileName: shellBeamNodeRes.yaml
 	fields:
 	    - displacement
+
+*writeModalResults:
+    fileName: shellBeamBucklingRes.yaml
+	writeModes: yes

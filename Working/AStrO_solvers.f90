@@ -135,7 +135,7 @@ contains
 		real*8, intent(out) :: xVec(ADim)
 		
 		real*8 :: resMag, dp
-		integer :: i1, i2, i3, i4, i5, i6, maxOutIt
+		integer :: i1, i2, i3, i4, i5, i6, maxOutIt, breakSrch, numR, numC
 		real*8, allocatable :: zVec(:), rVec(:), tempV1(:), tempV2(:), hMat(:,:), h2Ah(:,:)
 		
 		allocate(zVec(ADim),rVec(ADim),tempV1(ADim),tempV2(ADim),hMat(ADim,numVecs+1),h2Ah(numVecs+1,numVecs))
@@ -172,6 +172,7 @@ contains
 		tempV1(:) = bVec(:) - tempV2(:)
 		
 		call solveSparseLDLFact(rVec, tempV1, Pmat, PSize, PRange, ADim, zVec)
+		!rVec(:) = tempV1(:)
 		
 		resMag = r_0
 		do i1 = 1, ADim
@@ -186,7 +187,9 @@ contains
 		do while(resMag .gt. 1e-12 .and. i4 .lt. maxOutIt)
 		    hMat(:,1) = (r_1/resMag)*rVec(:)
 			h2Ah(:,:) = r_0
-			do i5 = 2, numVecs+1
+			i5 = 2
+			breakSrch = 0
+			do while(i5 .le. numVecs+1 .and. breakSrch .eq. 0)
 			    tempV1(:) = r_0
 				do i1 = 1, CDim
 					do i2 = CRange(i1-1)+1, CRange(i1)
@@ -231,23 +234,30 @@ contains
 				    dp = dp + hMat(i2,i5)*hMat(i2,i5)
 				enddo
 				dp = sqrt(dp)
-				hMat(:,i5) = (r_1/dp)*hMat(:,i5)
-				h2Ah(i5,i5-1) = dp
+				if(dp .gt. 1e-9_8) then
+				    hMat(:,i5) = (r_1/dp)*hMat(:,i5)
+				    h2Ah(i5,i5-1) = dp
+				    i5 = i5 + 1
+				else
+				    breakSrch = 1
+				endif
 			enddo
 			
-			call rFactorMat(h2Ah,numVecs+1,numVecs,2)
+			numR = i5 - 1
+			numC = i5 - 2
+			call rFactorMat(h2Ah,numVecs+1,numVecs,1,numR,1,numC,2)
 			tempV1(:) = r_0
 			do i1 = 1, ADim
-			    do i2 = 1, numVecs+1
+			    do i2 = 1, numR
 				    tempV1(i2) = tempV1(i2) + hMat(i1,i2)*rVec(i1)
 				enddo
 			enddo
 			i1 = numVecs + 1
-			tempV2(1:numVecs) = r_0
-			call solveRFactor(tempV2(1:numVecs),h2Ah,tempV1(1:i1),i1,numVecs,2)
+			tempV2(1:numC) = r_0
+			call solveRFactor(tempV2(1:numC),h2Ah,tempV1(1:numR),i1,numVecs,1,numR,1,numC,2)
 			
 			do i1 = 1, ADim
-			    do i2 = 1, numVecs
+			    do i2 = 1, numC
 				   xVec(i1) = xVec(i1) + hMat(i1,i2)*tempV2(i2)
 				enddo
 			enddo
@@ -291,62 +301,73 @@ contains
 			enddo
 			resMag = sqrt(resMag)
 			
+			write(*,*) 'resMag: ', resMag
+			
 			i4 = i4 + 1
 		enddo
+		
+		write(*,*) 'finished GMRes solve, i4 = ', i4, ' resMag = ', resMag
 		
 		deallocate(zVec,rVec,tempV1,tempV2,hMat,h2Ah)
 		
 	end subroutine gMRes
 
-    subroutine rFactorMat(Amat,rowDim,colDim,triDiag)
+    subroutine rFactorMat(Amat,rowDim,colDim,rowSt,rowEnd,colSt,colEnd,triDiag)
         implicit none
 
-        integer, intent(in) :: rowDim, colDim, triDiag
+        integer, intent(in) :: rowDim, colDim, rowSt, rowEnd, colSt, colEnd, triDiag
         real*8, intent(out) :: Amat(rowDim,colDim)
 
 
-        integer :: i1, i2, i3, maxRow, maxCol
-        real*8 :: theta, st, ct, a1, a2
+        integer :: i1, i2, i3, maxRow, maxCol, numRows, numCols, row, row1, col1, col3
+        real*8 :: theta, st, ct, a1, a2, diagTerm
 
-        do i1 = 1, colDim
+        numRows = rowEnd - rowSt + 1
+		numCols = colEnd - colSt + 1
+        do i1 = 1, numCols
+		    col1 = i1 + colSt - 1
+			row1 = i1 + rowSt - 1
             if(triDiag .eq. 1) then
                 maxRow = i1 + 1
                 maxCol = i1 + 2
-                if(maxRow .gt. rowDim) then
-                   maxRow = rowDim
+                if(maxRow .gt. numRows) then
+                   maxRow = numRows
                 endif
-                if(maxCol .gt. colDim) then
-                   maxCol = colDim
+                if(maxCol .gt. numCols) then
+                   maxCol = numCols
                 endif
             elseif(triDiag .eq. 2) then
                 maxRow = i1 + 1
-                maxCol = colDim
-                if(maxRow .gt. rowDim) then
-                   maxRow = rowDim
+                maxCol = numCols
+                if(maxRow .gt. numRows) then
+                   maxRow = numRows
                 endif
-                if(maxCol .gt. colDim) then
-                   maxCol = colDim
+                if(maxCol .gt. numCols) then
+                   maxCol = numCols
                 endif
             else
-                maxRow = rowDim
-                maxCol = colDim
+                maxRow = numRows
+                maxCol = numCols
             endif
             do i2 = i1+1, maxRow
-			    if(abs(Amat(i2,i1)) .gt. 1e-10) then
-                    if(Amat(i1,i1) .eq. r_0) then
+			    row = i2 + rowSt - 1
+			    if(abs(Amat(row,col1)) .gt. 1e-10) then
+				    diagTerm = Amat(row1,col1)
+                    if(diagTerm .eq. r_0) then
                         theta = 1.570796326794897
                     else
-                        theta = atan(Amat(i2,i1)/Amat(i1,i1))
+                        theta = atan(Amat(row,col1)/diagTerm)
                     endif
                     st = sin(theta)
                     ct = cos(theta)
                     do i3 = i1, maxCol
-                        a1 = ct*Amat(i1,i3) + st*Amat(i2,i3)
-                        a2 = -st*Amat(i1,i3) + ct*Amat(i2,i3)
-                        Amat(i1,i3) = a1
-                        Amat(i2,i3) = a2
+					    col3 = i3 + colSt - 1
+                        a1 = ct*Amat(row1,col3) + st*Amat(row,col3)
+                        a2 = -st*Amat(row1,col3) + ct*Amat(row,col3)
+                        Amat(row1,col3) = a1
+                        Amat(row,col3) = a2
                     enddo
-                    Amat(i2,i1) = theta
+                    Amat(row,col1) = theta
 				endif
             enddo
         enddo
@@ -354,52 +375,59 @@ contains
         return
     end subroutine rFactorMat
 
-    subroutine solveRFactor(soln,Amat,bVec,rowDim,colDim,triDiag)
+    subroutine solveRFactor(soln,Amat,bVec,rowDim,colDim,rowSt,rowEnd,colSt,colEnd,triDiag)
         implicit none
 
-        integer, intent(in) :: rowDim, colDim, triDiag
+        integer, intent(in) :: rowDim, colDim, rowSt, rowEnd, colSt, colEnd, triDiag
         real*8, intent(in) :: Amat(rowDim,colDim)
         real*8, intent(out) :: soln(colDim), bVec(rowDim)
 
-        integer :: i1, i2, maxRow, maxCol
+        integer :: i1, i2, i3, maxRow, maxCol, numRows, numCols, row, row1, col, col1
         real*8 :: r1, r2, st, ct
 
-
-        do i1 = 1, colDim
+        numRows = rowEnd - rowSt + 1
+		numCols = colEnd - colSt + 1
+        do i1 = 1, numCols
+		    col = i1 + colSt - 1
+			row1 = i1 + rowSt - 1
             if(triDiag .ne. 0) then
                 maxRow = i1 + 1
-                if(maxRow .gt. rowDim) then
-                    maxRow = rowDim
+                if(maxRow .gt. numRows) then
+                    maxRow = numRows
                 endif
             else
-                maxRow = rowDim
+                maxRow = numRows
             endif
             do i2 = i1+1, maxRow
-			    if(abs(Amat(i2,i1)) .gt. 1e-10) then
-                    st = sin(Amat(i2,i1))
-                    ct = cos(Amat(i2,i1))
-                    r1 = ct*bVec(i1) + st*bVec(i2)
-                    r2 = -st*bVec(i1) + ct*bVec(i2)
-                    bVec(i1) = r1
-                    bVec(i2) = r2
+			    row = i2 + rowSt - 1
+			    if(abs(Amat(row,col)) .gt. 1e-10) then
+                    st = sin(Amat(row,col))
+                    ct = cos(Amat(row,col))
+                    r1 = ct*bVec(row1) + st*bVec(row)
+                    r2 = -st*bVec(row1) + ct*bVec(row)
+                    bVec(row1) = r1
+                    bVec(row) = r2
 				endif
             enddo
         enddo
 
-        do i1 = colDim, 1, -1
+        do i1 = numCols, 1, -1
+		    row = i1 + rowSt - 1
+			col1 = i1 + colSt - 1
             if(triDiag .eq. 1) then
                 maxCol = i1 + 2
-                if(maxCol .gt. colDim) then
-                    maxCol = colDim
+                if(maxCol .gt. numCols) then
+                    maxCol = numCols
                 endif
             else
-                maxCol = colDim
+                maxCol = numCols
             endif
-            soln(i1) = bVec(i1)
+            soln(row) = bVec(row)
             do i2 = i1+1, maxCol
-                soln(i1) = soln(i1) - Amat(i1,i2)*soln(i2)
+			    col = i2 + colSt - 1
+                soln(row) = soln(row) - Amat(row,col)*soln(col)
             enddo
-            soln(i1) = soln(i1)/Amat(i1,i1)
+            soln(row) = soln(row)/Amat(row,col1)
         enddo
 
         return
@@ -652,7 +680,7 @@ contains
             do i2 = 1, ADim
                 matCopy(i2,i2) = matCopy(i2,i2) - eVals(i1) + pDiag(i2)
             enddo
-            call rFactorMat(matCopy,ADim,ADim,sym)
+            call rFactorMat(matCopy,ADim,ADim,1,ADim,1,ADim,sym)
             vMag = r_0
             do i2 = 1, ADim
                 h2AhVecs(i2,i1) = sin(r_1*i1*i2)
@@ -666,7 +694,7 @@ contains
             resNorm = r_1
             i2 = 0
             do while(abs(resNorm) .gt. 1e-10 .and. i2 .lt. 50)
-                call solveRFactor(vNext,matCopy,rhs,ADim,ADim,sym)
+                call solveRFactor(vNext,matCopy,rhs,ADim,ADim,1,ADim,1,ADim,sym)
                 vMag = r_0
                 do i3 = 1, ADim
                     vMag = vMag + vNext(i3)*vNext(i3)

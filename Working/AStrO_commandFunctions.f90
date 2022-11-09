@@ -493,19 +493,11 @@ module AStrO_commandFunctions
 		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10
 		
 		write(lfUnit,*) 'building elastic applied load'
-		!close(lfUnit)
-		!open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 		
 		do i1 = 1, numLds
 		    if(time .ge. loadsActTime(1,i1) .and. time .le. loadsActTime(2,i1)) then
 			    lt = loadType(i1)
 			    if(lt .eq. 'nodal') then
-				    write(lfUnit,*) 'building nodal load'
-					write(lfUnit,*) 'numNdSets: ', numNdSets
-					write(lfUnit,*) 'nDofIndex: '
-					write(lfUnit,*) nDofIndex
-				    close(lfUnit)
-			        open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 					do i2 = loadsRange(i1-1) + 1, loadsRange(i1)
 						read(loadNodes(i2),*,err=67) i3
 						do i4 = 1, 6
@@ -517,9 +509,6 @@ module AStrO_commandFunctions
 						goto 75
 67                      do i4 = 1, numNdSets
 							if(ndSetName(i4) .eq. loadNodes(i2)) then
-							    write(lfUnit,*) 'applying to node set ', ndSetName(i4)
-						        close(lfUnit)
-						        open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 								do i5 = ndSetRange(i4-1)+1, ndSetRange(i4)
 									i6 = nodeSets(i5)
 									do i7 = 1, 6
@@ -634,10 +623,6 @@ module AStrO_commandFunctions
 			endif
 		enddo
 		
-		write(lfUnit,*) 'building elastic dVar load'
-		!close(lfUnit)
-		!open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
-		
 		do i2 = 1, numNodes
 		    call r_getNodeDLoad(time,ndLd,i2)
 			do i3 = 1, 6
@@ -647,10 +632,6 @@ module AStrO_commandFunctions
 				endif
 			enddo
 		enddo
-		
-		write(lfUnit,*) 'finished building elastic applied load'
-		close(lfUnit)
-	    open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 		
 	end subroutine getElasticAppliedLoad
 	
@@ -1017,18 +998,19 @@ module AStrO_commandFunctions
 		integer :: i1, i2, maxNLIt, numVecs
 		
 		if(solveThermal .eq. 1) then
-		    if(thermMatDim .lt. 200) then
-				numVecs = thermMatDim/2
-			else
-				numVecs = 100
-			endif
+		    numVecs = solverMaxBW
 			thermalLoad(:) = r_0
 			call getThermalSolnLoad(0)
 			call getThermalAppliedLoad(time)
 			call getThermalConstraintLoad()
-			call gMRes(delDisp(1:numNodes),thermMat,thermMatCols,thermMatRange,thermMatSize,thermMatDim, &
-			    thermMPCMat,thermMPCMatCols,thermMPCMatRange,thermMPCSize,thermMPCDim,thermMatLT,thermMatLTRange, &
-				thermMatLTSize,thermalLoad,numVecs,thermMatDim)
+			if(solverMeth .eq. 'direct') then
+			    call solveSparseLDLFact(delDisp(1:numNodes),thermalLoad,thermMatLT,thermMatLTSize, &
+				    thermMatLTRange,numNodes,swapVec(1:numNodes))
+			else
+				call gMRes(delDisp(1:numNodes),thermMat,thermMatCols,thermMatRange,thermMatSize,thermMatDim, &
+					thermMPCMat,thermMPCMatCols,thermMPCMatRange,thermMPCSize,thermMPCDim,thermMatLT,thermMatLTRange, &
+					thermMatLTSize,thermalLoad,numVecs,thermMatDim)
+			endif
 			nodeTemp(:) = nodeTemp(:) + delDisp(1:numNodes)		
 		endif
 	
@@ -1038,52 +1020,31 @@ module AStrO_commandFunctions
 			else
 			    maxNLIt = 20
 			endif
-			if(elMatDim .lt. 200) then
-				numVecs = elMatDim/2
-			else
-				numVecs = 100
-			endif
+			numVecs = solverMaxBW
 			i1 = 0
 			delUNorm = r_1
 			do while(i1 .lt. maxNLIt .and. delUNorm .gt. 1e-12)
 			    elasticLoad(:) = r_0
 				intElasticLoad(:) = r_0
 			    call getElasticSolnLoad(nLGeom)
-				write(lfUnit,*) 'finished building elastic solution load'
-				!close(lfUnit)
-			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				call getElasticAppliedLoad(time)
-				write(lfUnit,*) 'finished building elastic applied load'
-				!close(lfUnit)
-			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				call getElasticConstraintLoad()
-				write(lfUnit,*) 'finished building elastic constraint load'
-				write(lfUnit,*) 'elasticLoad:'
-				do i2 = 1, elMatDim
-				    write(lfUnit,*) elasticLoad(i2)
-				enddo
-				!close(lfUnit)
-			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				if(nLGeom .ne. 0) then
 					call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
 						 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
 					call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
 				endif
-				write(lfUnit,*) 'finished factoring'
-				!close(lfUnit)
-			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				if(intVecSize .gt. 0) then
 				    call updateExternalRHS(elasticLoad,elMatDim,intElasticLoad,intVecSize)
-					write(lfUnit,*) 'finished updating external RHS'
-				    close(lfUnit)
-			        open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 				endif
-				write(lfUnit,*) 'calling gMRes, elastic solution'
-			    !close(lfUnit)
-			    !open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
-				!call gMRes(delDisp,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat,elMPCMatCols, &
-				!    elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,elasticLoad,numVecs,elMatDim)
-				call solveRFactor(delDisp,aFull,elasticLoad,elMatDim,elMatDim,0)
+				write(lfUnit,*) 'calling solver, elastic solution'
+				if(solverMeth .eq. 'direct') then
+				    call solveSparseLDLFact(delDisp, elasticLoad, elMatLT, elMatLTSize, elMatLTRange, elMatDim, swapVec)
+				else
+					call gMRes(delDisp,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat,elMPCMatCols, &
+						elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,elasticLoad,numVecs,4*elMatDim)
+				endif
+				!call solveRFactor(delDisp,aFull,elasticLoad,elMatDim,elMatDim,0)
 				if(intVecSize .gt. 0) then
 				    call updateInternalSoln(delDisp,elMatDim,internalDisp,intElasticLoad,intVecSize)
 				endif
@@ -1113,8 +1074,6 @@ module AStrO_commandFunctions
 		endif
 		
 		write(lfUnit,*) 'finished analysisPrep'
-		close(lfUnit)
-		open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 		
 		call loadInitialState()
 		
@@ -1128,37 +1087,29 @@ module AStrO_commandFunctions
 		
 		if(solveElastic .eq. 1) then
 		    call getElasticSolnLoad(1)
-			write(lfUnit,*) 'finished building elastic matrix'
-			close(lfUnit)
-			open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 			call scaleElasticMPC()
 			if(nLGeom .eq. 0) then
 			    !! --------------------------
-				outfileName = 'sparseStiffness.txt'
-				call writeSparseMatrix(outfileName,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim)
-				outfileName = 'elasticMPC.txt'
-				call writeSparseMatrix(outfileName,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+				! outfileName = 'sparseStiffness.txt'
+				! call writeSparseMatrix(outfileName,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim)
+				! outfileName = 'elasticMPC.txt'
+				! call writeSparseMatrix(outfileName,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
 				!! ---------------------------------
 				
-				! call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
-					 ! elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
-			    allocate(aFull(elMatDim,elMatDim))
-			    call convertToFullPop(aFull,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat, &
-				    elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+				call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
+					 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+			    !allocate(aFull(elMatDim,elMatDim))
+			    ! call convertToFullPop(aFull,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat, &
+				    ! elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
 				
 				!! ------------------------
 				!outfileName = 'elasticLTStiffess.txt'
 				!call writeLowerTriMatrix(outfileName,elMatLT,elMatLTRange,elMatLTSize,elMatDim)
 				!! -------------------------
 				
-				!call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
+				call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
 				
-				call rFactorMat(aFull,elMatDim,elMatDim,0)
-				
-				write(lfUnit,*) 'Factored diagonal terms: '
-				do i1 = 1, elMatDim
-				    write(lfUnit,*) aFull(i1,i1)
-				enddo
+				!call rFactorMat(aFull,elMatDim,elMatDim,0)
 				
 				!! ------------------------
 				!outfileName = 'elasticLTFactored.txt'
@@ -1203,7 +1154,7 @@ module AStrO_commandFunctions
 			numTSteps = i1
 		endif
 		
-		deallocate(aFull)
+		!deallocate(aFull)
 		
 	end subroutine solve
 	
@@ -1375,13 +1326,13 @@ module AStrO_commandFunctions
 			if(intVecSize .gt. 0) then
 			    call updateExternalRHS(dLdu,elMatDim,intdLdu,intVecSize)
 			endif
-			if(elMatDim .lt. 200) then
-				numVecs = elMatDim/2
+			numVecs = solverMaxBW
+			if(solverMeth .eq. 'direct') then
+			    call solveSparseLDLFact(dispAdj,dLdu,elMatLT,elMatLTSize,elMatLTRange,elMatDim,swapVec)
 			else
-				numVecs = 100
+				call gMRes(dispAdj,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat,elMPCMatCols, &
+						elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,dLdu,numVecs,elMatDim)
 			endif
-			call gMRes(dispAdj,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat,elMPCMatCols, &
-				    elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,dLdu,numVecs,elMatDim)
 			if(intVecSize .gt. 0) then
 			    call updateInternalSoln(dispAdj,elMatDim,intDispAdj,intdLdu,intVecSize)
 			endif
@@ -1432,14 +1383,14 @@ module AStrO_commandFunctions
 			call convertToLTri(thermMatLT,thermMatLTRange,thermMatLTSize,thermMat,thermMatCols,thermMatRange, &
 			    thermMatSize,thermMatDim,thermMPCMat,thermMPCMatCols,thermMPCMatRange,thermMPCSize,thermMPCDim)
 			call getSparseLDLFact(thermMatLT,thermMatLTSize,thermMatLTRange,thermMatDim)
-			if(thermMatDim .lt. 200) then
-				numVecs = thermMatDim/2
+			numVecs = solverMaxBW
+			if(solverMeth .eq. 'direct') then
+			    call solveSparseLDLFact(tempAdj,dLdt,thermMatLT,thermMatLTSize,thermMatLTRange,numNodes,swapVec)
 			else
-				numVecs = 100
+				call gMRes(tempAdj(:),thermMat,thermMatCols,thermMatRange,thermMatSize,thermMatDim, &
+					thermMPCMat,thermMPCMatCols,thermMPCMatRange,thermMPCSize,thermMPCDim,thermMatLT,thermMatLTRange, &
+					thermMatLTSize,dLdt,numVecs,thermMatDim)
 			endif
-			call gMRes(tempAdj(:),thermMat,thermMatCols,thermMatRange,thermMatSize,thermMatDim, &
-			    thermMPCMat,thermMPCMatCols,thermMPCMatRange,thermMPCSize,thermMPCDim,thermMatLT,thermMatLTRange, &
-				thermMatLTSize,dLdt,numVecs,thermMatDim)
         endif		
 		
 	end subroutine solveDynamicAdjoint

@@ -190,6 +190,7 @@ module AStrO_globalData
 
 !! Job command input parameters
 
+    character(len=16) :: solverMeth
     integer :: solverBlockDim, solverMaxBW, solveThermal, solveElastic
 	integer :: nLGeom, dynamic, writeSolnHist, numTSteps
 	real*8 :: nMBeta, nMGamma, delT, simPeriod, rayCoefK, rayCoefM

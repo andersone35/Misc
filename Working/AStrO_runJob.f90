@@ -53,19 +53,19 @@ program AStrO_runJob
 				i2 = index(commandString,'*readModelInput')
 				if(i2 .gt. 0) then
 				    readModel = 1
-					outputFileName = 'modelInputEcho.txt'
-					call writeModelData(outputFileName)
+					!outputFileName = 'modelInputEcho.txt'
+					!call writeModelData(outputFileName)
 				endif
-				i2 = index(commandString,'*readDesignVarInput')
-				if(i2 .gt. 0) then
-					outputFileName = 'dVarInputEcho.txt'
-					call writeDesignVarData(outputFileName)
-				endif
-				i2 = index(commandString,'*readObjectiveInput')
-				if(i2 .gt. 0) then
-					outputFileName = 'objectiveEcho.txt'
-					call writeObjectiveData(outputFileName)
-				endif
+				! i2 = index(commandString,'*readDesignVarInput')
+				! if(i2 .gt. 0) then
+					! outputFileName = 'dVarInputEcho.txt'
+					! call writeDesignVarData(outputFileName)
+				! endif
+				! i2 = index(commandString,'*readObjectiveInput')
+				! if(i2 .gt. 0) then
+					! outputFileName = 'objectiveEcho.txt'
+					! call writeObjectiveData(outputFileName)
+				! endif
 				!! ------
             elseif(fileLine(i1:i1+5) .eq. '*solve') then
                 if(readModel .eq. 0) then
@@ -77,14 +77,21 @@ program AStrO_runJob
 				write(lfUnit,*) 'reading solve command'
 				close(lfUnit)
 				open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+				solverMeth = 'direct'
                 solverBlockDim = numNodes
-                nnd2 = 27*numNodes*numNodes
+				if(solverBlockDim .lt. 4) then
+				    solverBlockdim = 4
+				endif
+                nnd2 = numNodes*numNodes
                 solverMaxBW = 1
                 bw3 = 1
                 do while(bw3 .lt. nnd2)
                     solverMaxBW = solverMaxBW + 1
                     bw3 = solverMaxBW*solverMaxBW*solverMaxBW
                 enddo
+				if(solverMaxBW .lt. 6) then
+				    solverMaxBW = 6
+				endif
                 solveThermal = 0
                 solveElastic = 1
                 nLGeom = 0
@@ -157,18 +164,39 @@ program AStrO_runJob
                             i3 = index(fileLine,'yes')
                             if(i3 .gt. 0) then
                                 writeSolnHist = 1
-                            endif       
+                            endif
+						elseif(fileLine(i2-12:i2) .eq. 'solverMethod:') then
+						    read(fileLine(i2+1:i2+64),*) solverMeth
+                        elseif(fileLine(i2-14:i2) .eq. 'solverBlockDim:') then
+						    read(fileLine(i2+1:i2+64),*,err=184) solverBlockDim
+							goto 186
+184                         write(lfUnit,*) 'Error: invalid input for solverBlockDim in line:'
+                            write(lfUnit,*) fileLine
+186							i1 = i1
+                        elseif(fileLine(i2-18:i2) .eq. 'solverMaxBandwidth:') then
+						    read(fileLine(i2+1:i2+64),*,err=190) solverMaxBW
+							goto 192
+190                         write(lfUnit,*) 'Error: invalid input for solverBlockDim in line:'
+                            write(lfUnit,*) fileLine
+192							i1 = i1
                         endif
                     endif
                     read(8,'(A)',iostat=iosVal) fileLine(16:256)
                     i1 = index(fileLine,'*')
                 enddo
+				if(solverMeth .eq. 'direct') then
+				     solverBlockDim = numNodes
+					 solverMaxBW = 6*numNodes
+				endif
 				write(lfUnit,*) 'calling solve'
 				close(lfUnit)
 				open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
                 call solve()
 114             numNodes = numNodes
             elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
+			    if(.not. allocated(currentRank)) then
+				    call analysisPrep()
+				endif
                 modalType = 0 !! 0 = buckling, 1 = vibration
                 numEigModes = 10
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)

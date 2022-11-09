@@ -385,16 +385,15 @@ module AStrO_bookKeeping
 					do i4 = nCRange(i1-1)+1, nCRange(i1)
 					    i5 = nodalConn(i4)
 						if(i5 .ne. 0) then
-						    i6 = currentRank(i1) - currentRank(i5)
-						    if(i6 .ge. 0 .and. i6 .le. solverMaxBW) then   !!if(ndBlockNum(i5) .eq. ndBlockNum(i1)) then
-							    i7 = nDofIndex(i2,i5)
-							    if(i7 .ne. 0 .and. i7 .le. i3) then
-								    i8 = i3 - i7 + 1
-									if(i8 .gt. elMatLTRange(i3)) then
-									    elMatLTRange(i3) = i8
+						    do i6 = 1, 6
+								i7 = nDofIndex(i6,i5)
+								if(i7 .ne. 0 .and. i7 .le. i3) then
+									i8 = i3 - i7 + 1
+									if(i8 .gt. elMatLTRange(i3) .and. i8 .le. solverMaxBW) then
+										elMatLTRange(i3) = i8
 									endif
 								endif
-							endif
+							enddo
 						endif
 					enddo
 				endif
@@ -935,15 +934,27 @@ module AStrO_bookKeeping
 		
 		!! Populate the global degree of freedom index
 		do i1 = 1, numNodes
-		    if(nDofIndex(1,i1) .eq. 3) then
-			    do i2 = 1, 3
-				    nDofIndex(i2,i1) = currentRank(i1) + (i2-1)*numSolidNds
-				enddo
-			elseif(nDofIndex(1,i1) .eq. 6) then
-			    do i2 = 1, 6
-				    nDofIndex(i2,i1) = currentRank(i1) + (i2-1)*numSectionNds + 2*numSolidNds
-				enddo
-			endif
+			! if(solverMeth .eq. 'iterative') then
+				! if(nDofIndex(1,i1) .eq. 3) then
+					! do i2 = 1, 3
+						! nDofIndex(i2,i1) = currentRank(i1) + (i2-1)*numSolidNds
+					! enddo
+				! elseif(nDofIndex(1,i1) .eq. 6) then
+					! do i2 = 1, 6
+						! nDofIndex(i2,i1) = currentRank(i1) + (i2-1)*numSectionNds + 2*numSolidNds
+					! enddo
+				! endif
+			! else
+				if(nDofIndex(1,i1) .eq. 3) then
+					do i2 = 1, 3
+						nDofIndex(i2,i1) = 3*(currentRank(i1) - 1) + i2
+					enddo
+				elseif(nDofIndex(1,i1) .eq. 6) then
+					do i2 = 1, 6
+						nDofIndex(i2,i1) = 6*(currentRank(i1) - 1) + i2 - 3*numSolidNds
+					enddo
+				endif
+			!endif
 		enddo
 		
 		elMatDim = 3*numSolidNds + 6*numSectionNds

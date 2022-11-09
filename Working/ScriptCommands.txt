@@ -28,6 +28,9 @@
 	newmarkGamma:
 	simPeriod:
 	saveSolnHist: no
+	solverMethod:
+	solverBandwidth:
+	solverBlockDim:
 
 *modalAnalysis: X
     type: buckling
