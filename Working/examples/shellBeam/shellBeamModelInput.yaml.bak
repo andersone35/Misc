@@ -77,11 +77,11 @@ constraints:
         - 0.0
         - 0.0
 loads:
-   # critical buckling load
+   # arc deflection
     - type: nodal
-      activeTime: 0.0
+      activeTime: [0.0, 1.0]
       setLoads:
-          - [tip, -0.514042, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          - [tip, 0.0, 0.0, 0.0, 0.0, -1.6, 0.0, 0.0]
 initialState:
     displacement:
         - [tip, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

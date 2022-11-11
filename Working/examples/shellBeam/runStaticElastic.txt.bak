@@ -1,0 +1,14 @@
+*readModelInput:
+    fileName: examples/shellBeam/shellBeamModelInput.yaml
+
+*solve:
+    elastic: yes
+	thermal: no
+    nonLinearGeom: yes
+	dynamic: no
+	solverMethod: direct
+
+*writeNodeResults:
+    fileName: examples/shellBeam/out/shellBeamNodeRes.yaml
+	fields:
+	    - displacement

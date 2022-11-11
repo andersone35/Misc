@@ -1,0 +1,9 @@
+E = 1000000
+L = 10
+t = 0.1
+w = 1.0
+I = (1/12)*b*h^3 = 1/12000
+tip deflection for (Fz = 2) on tip = FL^3/3EI = 8
+moment for 45 degree arc deflection = EIw'' = 6.54498469
+tip deflection for arc moment = [-0.99684, 0.0, 3.729232]
+critical buckling load in x compression = pi^2EI/4L^2 = 2.056176

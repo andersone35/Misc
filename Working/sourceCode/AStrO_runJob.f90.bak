@@ -34,6 +34,8 @@ program AStrO_runJob
     
     write(lfUnit,*) 'Beginning Job'
     write(lfUnit,*) 'Script name: ', jobScriptName
+	write(*,*) 'Beginning Job'
+    write(*,*) 'Script name: ', jobScriptName
     
     readModel = 0
     
@@ -47,6 +49,7 @@ program AStrO_runJob
         if(i1 .gt. 0) then
             if(fileLine(i1:i1+4) .eq. '*read') then
 			    commandString = fileLine
+				write(*,*) 'running ', commandString
                 call processReadCommand(8,fileLine,iosVal)
                 i1 = index(fileLine,'*')
 				!! ------
@@ -75,8 +78,7 @@ program AStrO_runJob
                     goto 114
                 endif
 				write(lfUnit,*) 'reading solve command'
-				close(lfUnit)
-				open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+				write(*,*) 'reading solve command'
 				solverMeth = 'direct'
                 solverBlockDim = numNodes
 				if(solverBlockDim .lt. 4) then
@@ -95,6 +97,7 @@ program AStrO_runJob
                 solveThermal = 0
                 solveElastic = 1
                 nLGeom = 0
+				loadTime = 1d0
                 dynamic = 0
                 writeSolnHist = 0
                 numTSteps = 0
@@ -228,6 +231,10 @@ program AStrO_runJob
                 allocate(eigenVals(numEigModes))
                 allocate(eigenFactors(numEigModes))
                 allocate(diagMassMat(elMatDim))
+				eigenModes(:,:) = r_0
+                eigenVals(:) = r_0
+                eigenFactors(:) = r_0
+                diagMassMat(:) = r_0
                 i3 = dynamic
                 dynamic = 0
                 call getElasticSolnLoad(1)
@@ -240,8 +247,12 @@ program AStrO_runJob
                 else
                     diagMassMat(:) = r_1
                 endif
-                call getSparseEigenModes(eigenModes,eigenVals,numEigModes,elMatDim,elasticMat,elMatCols,elMatRange,elMatSize, &
-                    diagMassMat,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCDim,elMPCSize)
+				if(solverMeth .eq. 'iterative') then
+					call getSparseEigenModes(eigenModes,eigenVals,numEigModes,elMatDim,elasticMat,elMatCols,elMatRange,elMatSize, &
+						diagMassMat,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCDim,elMPCSize)
+				else
+				    call getEigModesLDL(eigenModes,eigenVals,numEigModes,elMatDim,elMatLT,elMatLTRange,elMatLTSize,diagMassMat)
+				endif
                 if(modalType .eq. 0) then
                     call getBucklingLoadFactors(eigenFactors,numEigModes)
                 else
@@ -284,6 +295,7 @@ program AStrO_runJob
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+16) .eq. '*writeNodeResults' .or. fileLine(i1:i1+19) .eq. '*writeElementResults') then
+			    write(*,*) 'writing node results'
                 call processWriteNodeEl(8,fileLine,iosVal)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+17) .eq. '*writeModalResults') then

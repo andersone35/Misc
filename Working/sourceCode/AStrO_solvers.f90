@@ -728,6 +728,109 @@ contains
         return
     end subroutine eigenSolve
 	
+	subroutine getEigModesLDL(eVecs,eVals,numVecs,matDim,ALT,ALTRange,ALTSize,Mmat)
+	    implicit none
+		
+		integer, intent(in) :: numVecs, matDim, ALTSize
+		integer, intent(in) :: ALTRange(0:matDim)
+		real*8, intent(in) :: ALT(ALTSize), Mmat(matDim)
+		real*8, intent(out) :: eVecs(matDim,numVecs), eVals(numVecs)
+		
+		real*8, allocatable :: basisVecs(:,:), tempV1(:), tempV2(:), tempV3(:), hAh(:,:), hAhVecs(:,:), hAhVals(:)
+		real*8 :: mag, dp, tVal
+		integer :: i1, i2, i3, i4, i5, i6, basisSize
+		
+		basisSize = 5*numVecs
+		allocate(basisVecs(matDim,basisSize+1))
+		allocate(tempV1(matDim))
+		allocate(tempV2(matDim))
+		allocate(tempV3(matDim))
+		allocate(hAh(basisSize,basisSize))
+		allocate(hAhVecs(basisSize,basisSize))
+		allocate(hAhVals(basisSize))
+		
+		basisVecs(:,:) = r_0
+		hAh(:,:) = r_0
+
+		mag = r_0
+		do i1 = 1, matDim
+		    tVal = sin(r_1*i1)
+		    basisVecs(i1,1) = tVal
+			mag = mag + tVal*tVal
+		enddo
+		mag = sqrt(mag)
+		basisVecs(:,1) = (r_1/mag)*basisVecs(:,1)
+		
+		do i1 = 2, basisSize + 1
+		    do i2 = 1, matDim
+			    tempV1(i2) = Mmat(i2)*basisVecs(i2,i1-1)
+			enddo
+		    call solveSparseLDLFact(basisVecs(:,i1), tempV1, ALT, ALTSize, ALTRange, matDim, tempV2)
+			do i2 = 1, i1-1
+			    dp = r_0
+				do i3 = 1, matDim
+					dp = dp + basisVecs(i3,i1)*basisVecs(i3,i2)
+				enddo
+				basisVecs(:,i1) = basisVecs(:,i1) - dp*basisVecs(:,i2)
+				hAh(i2,i1-1) = dp
+			enddo
+			mag = r_0
+			do i3 = 1, matDim
+				mag = mag + basisVecs(i3,i1)*basisVecs(i3,i1)
+			enddo
+			mag = sqrt(mag)
+			basisVecs(:,i1) = (r_1/mag)*basisVecs(:,i1)
+			if(i1 .le. basisSize) then
+			    hAh(i1,i1-1) = mag
+			endif
+		enddo
+		
+		call eigenSolve(hAhVals,hAhVecs,hAh,basisSize,basisSize,0)
+		
+		i1 = 0
+		i2 = basisSize
+		do while(i1 .lt. numVecs .and. i2 .ge. 1)
+		    tempV2(:) = r_0
+			do i3 = 1, matDim
+			    do i4 = 1, basisSize
+				    tempV2(i3) = tempV2(i3) + basisVecs(i3,i4)*hAhVecs(i4,i2) 
+				enddo
+			enddo
+			mag = r_0
+			do i3 = 1, matDim
+			    mag = mag + tempV2(i3)*tempV2(i3)
+			enddo
+			mag = sqrt(mag)
+			tempV2(:) = (r_1/mag)*tempV2(:)
+			eVecs(:,i1+1) = tempV2(:)
+			do i3 = 1, matDim
+			    tempV1(i3) = Mmat(i3)*tempV2(i3)
+			enddo
+		    call solveSparseLDLFact(tempV3, tempV1, ALT, ALTSize, ALTRange, matDim, tempV2)
+			dp = r_0
+			mag = r_0
+			do i3 = 1, matDim
+			    dp = dp + tempV3(i3)*eVecs(i3,i1+1)
+				mag = mag + tempV3(i3)*tempV3(i3)
+			enddo
+			mag = sqrt(mag)
+			if(abs(dp) .gt. 0.999999d0*mag) then
+			    i1 = i1 + 1
+				eVals(i1) = r_1/dp
+			endif
+			i2 = i2 - 1
+		enddo
+		
+		deallocate(basisVecs)
+		deallocate(tempV1)
+		deallocate(tempV2)
+		deallocate(tempV3)
+		deallocate(hAh)
+		deallocate(hAhVecs)
+		deallocate(hAhVals)
+		
+	end subroutine getEigModesLDL
+	
 	subroutine getSparseEigenModes(eVecs,eVals,numVecs,matDim,Amat,Acols,ARange,Asize,Mmat,Cmat,Ccols,CRange,Cdim,Csize)
 	    implicit none
 		

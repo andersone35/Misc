@@ -61,9 +61,13 @@ module AStrO_commandFunctions
 			i2 = index(fileLine,':')
 			if(i2 .gt. 0) then
 				if(fileLine(i2-8:i2) .eq. 'fileName:') then
-					read(fileLine(i2+1:i2+128),*) inputFileName
+					read(fileLine(i2+1:i2+128),'(A)') inputFileName
+					inputFileName = adjustl(inputFileName)
+					inputFileName = trim(inputFileName)
 					write(lfUnit,*) 'calling ', commandTag, 'file: ', inputFileName
+					write(*,*) 'calling ', commandTag, 'file: ', inputFileName
 					call readAnyInput(inputFileName,commandTag)
+					write(*,*) 'finished reading input'
 				endif
 			endif
 			read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
@@ -343,7 +347,7 @@ module AStrO_commandFunctions
 				temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
 			!! -------------------
 			! if(i1 .eq. 1) then
-			    ! write(lfUnit,*) 'first element data'
+			    ! write(lfUnit,*) 'element ', i1, ' data'
 				! write(lfUnit,*) 'numNds: ', numNds, 'dofPerNd: ', dofPerNd, 'numIntDof: ', numIntDof, 'numIntPts: ', numIntPts
 				! write(lfUnit,*) 'intPts: '
 				! write(lfUnit,*) intPts
@@ -380,12 +384,16 @@ module AStrO_commandFunctions
 		    call r_getElRu(Ru,dRdU,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
 				statInOri,statdrIdrG,statRot,den,sMass,bMass)
+			! write(lfUnit,*) 'Element ', i1, 'Ru:'
+			! write(lfUnit,*) Ru(1:24)
 			i3 = numNds*dofPerNd
 			do i2 = 1, i3
 			    i4 = dofTable(1,i2)
 				i5 = elementList(dofTable(2,i2),i1)
 				i6 = nDofIndex(i4,i5)
-				elasticLoad(i6) = elasticLoad(i6) - Ru(i2)
+				if(i6 .gt. 0) then
+				    elasticLoad(i6) = elasticLoad(i6) - Ru(i2)
+				endif
 			enddo
 			if(numIntDof .ne. 0) then
 			    i4 = intVecRange(i1-1) + 1
@@ -774,7 +782,7 @@ module AStrO_commandFunctions
 				totalDof = nodalDof + numIntDof
 				i4 = intMatRange(i1-1) + 1
 				do i2 = 1, totalDof
-				    do i3 = nodalDof+1, numIntDof
+				    do i3 = nodalDof+1, totalDof
 					    elIntMat(i3,i2) = intElasticMat(i4)
 						i4 = i4 + 1
 					enddo
@@ -787,7 +795,7 @@ module AStrO_commandFunctions
 				    i4 = elementList(dofTable(2,i2),i1)
 					i5 = dofTable(1,i2)
 					i6 = nDofIndex(i5,i4)
-				    do i3 = nodalDof+1, numIntDof
+				    do i3 = nodalDof+1, totalDof
 					    extVec(i6) = extVec(i6) - elIntMat(i3,i2)*temp1(i3)
 					enddo
 				enddo
@@ -815,7 +823,7 @@ module AStrO_commandFunctions
 				totalDof = nodalDof + numIntDof
 				i4 = intMatRange(i1-1) + 1
 				do i2 = 1, totalDof
-				    do i3 = nodalDof+1, numIntDof
+				    do i3 = nodalDof+1, totalDof
 					    elIntMat(i3,i2) = intElasticMat(i4)
 						i4 = i4 + 1
 					enddo
@@ -827,7 +835,7 @@ module AStrO_commandFunctions
 				    i4 = elementList(dofTable(2,i2),i1)
 					i5 = dofTable(1,i2)
 					i6 = nDofIndex(i5,i4)
-				    do i3 = nodalDof+1, numIntDof
+				    do i3 = nodalDof+1, totalDof
 					    temp2(i3) = temp2(i3) - elIntMat(i3,i2)*extSoln(i6)
 					enddo
 				enddo
@@ -955,37 +963,87 @@ module AStrO_commandFunctions
 		integer, intent(in) :: numFact
 		real*8, intent(out) :: bFact(numFact)
 		
-		real*8, allocatable :: Ruk(:)
-		real*8 :: numer, denom
-		integer :: i1, i2, dynCopy
+		real*8, allocatable :: intSwap(:)
+		real*8 :: modDim, numer, denom, K0VMag
+		integer :: i1, i2, i3, i4, dynCopy
 		
-		allocate(Ruk(elMatDim))
+		if(intVecSize .gt. 0) then
+		    allocate(intSwap(intVecSize))
+			intSwap(:) = internalDisp(:)
+			internalDisp(:) = r_0
+		endif
+		swapVec(:) = nodeDisp(:)
+		nodeDisp(:) = r_0
 		
 		dynCopy = dynamic
 		dynamic = 0
-		elasticLoad(:) = r_0
-		call getElasticSolnLoad(0)
-		Ruk(:) = -elasticLoad(:)
 		
-		elasticLoad(:) = r_0
-		call getElasticAppliedLoad(loadTime)
+		call getElasticSolnLoad(1)
+		
+		! elasticLoad(:) = r_0
+		! if(intVecSize .gt. 0) then
+		    ! intElasticLoad(:) = r_0
+		! endif
+		! call getElasticAppliedLoad(loadTime)
+		! appLd(:) = elasticLoad(:)
+		
+		write(lfUnit,*) 'Beginning getBucklingLoadFactors'
 		
 		do i1 = 1, numFact
-		    numer = r_0
-			denom = r_0
+		    delDisp(:) = r_0
+			K0VMag = r_0
 			do i2 = 1, elMatDim
-			    numer = numer + Ruk(i2)*eigenModes(i2,i1)
-				denom = denom + elasticLoad(i2)*eigenModes(i2,i1)
+			    do i3 = elMatRange(i2-1)+1, elMatRange(i2)
+				    i4 = elMatCols(i3)
+					delDisp(i2) = delDisp(i2) + elasticMat(i3)*eigenModes(i4,i1)
+				enddo
+				K0VMag = K0VMag + delDisp(i2)*delDisp(i2)
 			enddo
+			K0VMag = sqrt(K0VMag)
+			denom = K0VMag - eigenVals(i1)
+		    ! delDisp(:) = 0.01d0*modDim*eigenModes(:,i1)
+		    ! nodeDisp(:) = nodeDisp(:) + delDisp(:)
+			! elasticLoad(:) = r_0
+			! if(intVecSize .gt. 0) then
+			    ! intEMd(:) = r_0
+				! intRuk(:) = r_0
+				! call updateInternalSoln(eigenModes(:,i1),elMatDim,intEMd,intRuk,intVecSize)
+				! intDelDisp(:) = 0.01d0*modDim*intEMd(:)
+				! internalDisp(:) = internalDisp(:) + intDelDisp(:)
+		        ! intElasticLoad(:) = r_0
+		    ! endif
+			! call getElasticSolnLoad(0)
+			! Ruk(:) = -elasticLoad(:)
+			! nodeDisp(:) = nodeDisp(:) - delDisp(:)
+		    ! numer = r_0
+			! denom = r_0
+			! do i2 = 1, elMatDim
+			    ! numer = numer + Ruk(i2)*delDisp(i2)
+				! denom = denom + (Ruk(i2) - appLd(i2))*nodeDisp(i2)
+			! enddo
+			! if(intVecSize .gt. 0) then
+			    ! intRuk(:) = -intElasticLoad(:)
+				! internalDisp(:) = internalDisp(:) - delDisp(:)
+				! do i2 = 1, intVecSize
+				    ! numer = numer + intRuk(i2)*intDelDisp(i2)
+					! denom = denom + intRuk(i2)*internalDisp(i2)
+				! enddo
+			! endif
 			if(abs(denom) .gt. r_0) then
-			    bFact(i1) = numer/denom
+			    bFact(i1) = K0VMag/denom
 			else
 			    bFact(i1) = 1e+100_8
 			endif
 		enddo
 		
+		nodeDisp(:) = swapVec(:)
+		
 		dynamic = dynCopy
-		deallocate(Ruk)
+
+		if(intVecSize .gt. 0) then
+		    internalDisp(:) = intSwap(:)
+		    deallocate(intSwap)
+		endif
 		
 	end subroutine getBucklingLoadFactors
 	
@@ -1057,6 +1115,7 @@ module AStrO_commandFunctions
 					endif
 				enddo
 				i1 = i1 + 1
+				write(lfUnit,*) 'solver iteration: ', i1, ', step magnitude: ', delUNorm
 			enddo
 		endif
 	
@@ -1877,7 +1936,9 @@ module AStrO_commandFunctions
 			i2 = index(fileLine,':')
 			if(i2 .gt. 0) then
 				if(fileLine(i2-8:i2) .eq. 'fileName:') then
-					read(fileLine(i2+1:i2+128),*) outputFileName
+					read(fileLine(i2+1:i2+128),'(A)') outputFileName
+					outputFileName = adjustl(outputFileName)
+					outputFileName = trim(outputFileName)
 					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
 					i1 = index(fileLine,'*')
 				elseif(fileLine(i2-7:i2) .eq. 'nodeSet:') then
@@ -2131,7 +2192,9 @@ module AStrO_commandFunctions
 		    i2 = index(fileLine,':')
 			if(i2 .gt. 0) then
 			    if(fileLine(i2-8:i2) .eq. 'fileName:') then
-				    read(fileLine(i2+1:i2+128),*) fileName
+				    read(fileLine(i2+1:i2+128),'(A)') fileName
+					fileName = adjustl(fileName)
+					fileName = trim(fileName)
 					read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
 		            i1 = index(fileLine,'*')
 				elseif(fileLine(i2-7:i2) .eq. 'nodeSet:') then

@@ -1,0 +1,28 @@
+*readModelInput:
+    fileName: examples/shellBeam/shellBeamModelInput.yaml
+
+*readDesignVarInput:
+    fileName: examples/shellBeam/shellBeamDVarInput.yaml
+	
+*readObjectiveInput:
+    fileName: examples/shellBeam/shellBeamObjInput.yaml
+
+*solve:
+    elastic: yes
+	thermal: no
+    nonLinearGeom: no
+	dynamic: no
+	solverMethod: direct
+	
+*modalAnalysis:
+    type: buckling
+	numModes: 10
+
+*writeNodeResults:
+    fileName: examples/shellBeam/out/shellBeamNodeRes.yaml
+	fields:
+	    - displacement
+
+writeModalResults:
+    fileName: examples/shellBeam/out/shellBeamBucklingRes.yaml
+	writeModes: yes
