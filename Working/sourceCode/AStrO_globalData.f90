@@ -195,6 +195,7 @@ module AStrO_globalData
 	integer :: nLGeom, dynamic, writeSolnHist, numTSteps
 	real*8 :: nMBeta, nMGamma, delT, simPeriod, rayCoefK, rayCoefM
 	real*8 :: loadTime
+	integer :: ldRampSteps
 	integer :: numEigModes, modalType
 	
 !! Job utilities

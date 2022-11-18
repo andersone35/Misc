@@ -77,6 +77,17 @@ constraints:
     rhs:
         - r1
         - r2
+        
+##  Alternative constraints
+
+constraints:
+    - terms:
+          - nodeSet:
+            dof:
+            coeff:
+      rhs:
+
+##
 loads:
     - type:  nodal, bodyForce, gravitational, centrifugal, surfacePressure, surfaceTraction, bodyHeatGen, surfaceFlux
       activeTime: [start, end]
@@ -98,6 +109,20 @@ loads:
           - [el,Q]
           ## or
           - [el,nx,ny,nz,thetaTol,f]
+          
+## Alternative loads
+
+loads:
+    - type: nodal, bodyForce, gravitational, centrifugal, surfacePressure, surfaceTraction, bodyHeatGen, surfaceFlux
+      activeTime: [start,end]
+      center:
+      axis:
+      angularVelocity:
+      normal:
+      normTolerance:
+      setLoads:
+
+##
 initialState:
     displacement:
         - [nd,Ux,Uy,Yz,Rx,Ry,Rz]

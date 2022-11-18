@@ -4,7 +4,9 @@
 *solve:
     elastic: yes
 	thermal: no
-    nonLinearGeom: yes
+    nonLinearGeom: no
+	staticLoadTime: 0.5
+	loadRampSteps: 1
 	dynamic: no
 	solverMethod: direct
 

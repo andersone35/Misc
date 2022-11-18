@@ -1,6 +1,7 @@
 module AStrO_bookKeeping
     use AStrO_globalData
 	use AStrO_constantVals
+	use AStrO_r_elementEqns
 
     contains
 	
@@ -129,7 +130,6 @@ module AStrO_bookKeeping
     end subroutine getdToElComp
 	
 	subroutine findElementSurfaces()
-	    use AStrO_r_elementEqns
 	    implicit none
 		
 		integer, allocatable :: faceEl(:), faceNum(:), faceNd1(:), faceNd2(:), faceNd3(:), faceDup(:), nextFace(:)
@@ -837,6 +837,8 @@ module AStrO_bookKeeping
 		integer :: nCSize
 		integer :: nextAvail, currentBlock
 		integer :: eT, ndof, numSolidNds, numSectionNds, minCon, stNd
+		integer :: numNds, dofPerNd, numIntDof, numIntPts, dofTable(2,33)
+		real*8 :: intPts(3,8), ipWt(8)
 		integer :: i1, i2, i3, i4, i5, i6, inserted
 		
 	    allocate(currentRank(numNodes))
@@ -1026,20 +1028,10 @@ module AStrO_bookKeeping
 		intVecRange(0) = 0
 		intMatRange(0) = 0
 		do i1 = 1, numEls
-		    i2 = elementType(i1)
-		    if(i2 .eq. 81) then
-			    intVecRange(i1) = 9
-				intMatRange(i1) = 297
-			elseif(i2 .eq. 41) then
-			    intVecRange(i1) = 8
-				intMatRange(i1) = 256
-			elseif(i2 .eq. 3) then
-			    intVecRange(i1) = 3
-				intMatRange(i1) = 63
-			elseif(i2 .eq. 2) then
-			    intVecRange(i1) = 2
-				intMatRange(i1) = 28
-			endif
+			call r_getElementProfile(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt,i1)
+			i2 = numIntDof*(numNds*dofPerNd + numIntDof)
+			intVecRange(i1) = numIntDof
+			intMatRange(i1) = i2
 		enddo
 		
 		do i1 = 2, numEls
@@ -1049,6 +1041,7 @@ module AStrO_bookKeeping
 		
 		intVecSize = intVecRange(numEls)
 		intMatSize = intMatRange(numEls)
+		
 		
         if(.not. allocated(internalDisp) .and. intVecSize .gt. 0) then
 			allocate(internalDisp(intVecSize))
@@ -1078,6 +1071,7 @@ module AStrO_bookKeeping
 		call buildThermalMPC()
 		
 		call findElementSurfaces()
+		
 		
 		deallocate(ndInserted)
 		deallocate(ndBlockNum)

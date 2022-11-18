@@ -81,7 +81,7 @@ loads:
     - type: nodal
       activeTime: [0.0, 1.0]
       setLoads:
-          - [tip, 0.0, 0.0, 0.0, 0.0, -1.6, 0.0, 0.0]
+          - [tip, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0]
 initialState:
     displacement:
         - [tip, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

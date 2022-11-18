@@ -98,6 +98,7 @@ program AStrO_runJob
                 solveElastic = 1
                 nLGeom = 0
 				loadTime = 1d0
+				ldRampSteps = 1
                 dynamic = 0
                 writeSolnHist = 0
                 numTSteps = 0
@@ -134,6 +135,12 @@ program AStrO_runJob
 137                         write(lfUnit,*) 'Error: invalid input for staticLoadTime in line:'
                             write(lfUnit,*) fileLine
 140                         i1 = i1
+                        elseif(fileLine(i2-13:i2) .eq. 'loadRampSteps:') then
+						    read(fileLine(i2+1:i2+64),*,err=141) ldRampSteps
+                            goto 143
+141                         write(lfUnit,*) 'Error: invalid input for loadRampSteps in line:'
+                            write(lfUnit,*) fileLine
+143                         i1 = i1
                         elseif(fileLine(i2-7:i2) .eq. 'dynamic:') then
                             i3 = index(fileLine,'yes')
                             if(i3 .gt. 0) then
@@ -192,9 +199,9 @@ program AStrO_runJob
 					 solverMaxBW = 6*numNodes
 				endif
 				write(lfUnit,*) 'calling solve'
-				close(lfUnit)
-				open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+				write(*,*) 'calling solve'
                 call solve()
+				write(*,*) 'called solve'
 114             numNodes = numNodes
             elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
 			    if(.not. allocated(currentRank)) then
@@ -306,7 +313,7 @@ program AStrO_runJob
                     i2 = index(fileLine,':')
                     if(i2 .gt. 0) then
                         if(fileLine(i2-8:i2) .eq. 'fileName:') then
-                            read(fileLine(i2+1:i2+128),*) outputFileName
+                            read(fileLine(i2+1:i2+128),'(A)') outputFileName
 							outputFileName = adjustl(outputFileName)
 							outputFileName = trim(outputFileName)
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)
@@ -339,7 +346,7 @@ program AStrO_runJob
                     i2 = index(fileLine,':')
                     if(i2 .gt. 0) then
                         if(fileLine(i2-8:i2) .eq. 'fileName:') then
-                            read(fileLine(i2+1:i2+128),*) outputFileName
+                            read(fileLine(i2+1:i2+128),'(A)') outputFileName
 							outputFileName = adjustl(outputFileName)
 							outputFileName = trim(outputFileName)
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)

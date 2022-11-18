@@ -6,6 +6,7 @@
 	thermal: no
     nonLinearGeom: yes
 	staticLoadTime: 0.5
+	loadRampSteps: 16
 	dynamic: no
 	solverMethod: direct
 

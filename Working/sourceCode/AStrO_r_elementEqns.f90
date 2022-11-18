@@ -399,20 +399,22 @@ module AStrO_r_elementEqns
 		elseif(eType .eq. 41) then
 		    numNds = 4
 			dofPerNd = 6
-			numIntDof = 8
+			numIntDof = 0
 			numIntPts = 4
 			intPts(:,1) = r_1rt3*(/-r_1,-r_1,r_0/)
 			intPts(:,2) = r_1rt3*(/r_1,-r_1,r_0/)
 			intPts(:,3) = r_1rt3*(/-r_1,r_1,r_0/)
 			intPts(:,4) = r_1rt3*(/r_1,r_1,r_0/)
-			dofTable(:,25) = (/1,5/)
-			dofTable(:,26) = (/1,6/)
-			dofTable(:,27) = (/2,5/)
-			dofTable(:,28) = (/2,6/)
-			dofTable(:,29) = (/3,7/)
-			dofTable(:,30) = (/3,8/)
-			dofTable(:,31) = (/3,9/)
-			dofTable(:,32) = (/3,10/)
+			! dofTable(:,25) = (/1,5/)
+			! dofTable(:,26) = (/1,6/)
+			! dofTable(:,27) = (/2,5/)
+			! dofTable(:,28) = (/2,6/)
+			! dofTable(:,29) = (/3,5/)
+			! dofTable(:,30) = (/3,6/)
+			! dofTable(:,29) = (/3,7/)
+			! dofTable(:,30) = (/3,8/)
+			! dofTable(:,31) = (/3,9/)
+			! dofTable(:,32) = (/3,10/)
 			ipWt(1:4) = r_1
 		elseif(eType .eq. 3) then
 		    numNds = 3
@@ -489,6 +491,7 @@ module AStrO_r_elementEqns
 			call r_getShellExpLoad(sTELd,elNum)
 			call r_getShellThermCond(stCond,elNum)
 			call r_getShellSpecHeat(ssHeat,elNum)
+			call r_adjustABD(ABD,locNds,elNum)
         else	
 			call r_getMaterialStiffness(cMat,elNum)
 			call r_getMaterialDensity(den,elNum)
@@ -496,7 +499,6 @@ module AStrO_r_elementEqns
 			call r_getMaterialThermCond(tCond,elNum)
 			call r_getMaterialSpecHeat(sHeat,elNum)
 		endif
-		
 		
 	end subroutine r_getElementProperties
 	
@@ -528,13 +530,15 @@ module AStrO_r_elementEqns
 			temp(i1) = r_1*nodeTemp(i3)
 			Tdot(i1) = r_1*nodeTdot(i3)
 			do i2 = 1, dofPerNd
-			    i4 = nDofIndex(i2,i1)
-				pDisp(i2,i1) = r_1*prevDisp(i4)
-				pAcc(i2,i1) = r_1*prevAcc(i4)
-				pVel(i2,i1) = r_1*prevVel(i4)
-				disp(i2,i1) = r_1*nodeDisp(i4)
-				vel(i2,i1) = r_1*nodeAcc(i4)
-				acc(i2,i1) = r_1*nodeVel(i4)
+			    i4 = nDofIndex(i2,elementList(i1,elNum))
+				if(i4 .ne. 0) then
+					pDisp(i2,i1) = r_1*prevDisp(i4)
+					pAcc(i2,i1) = r_1*prevAcc(i4)
+					pVel(i2,i1) = r_1*prevVel(i4)
+					disp(i2,i1) = r_1*nodeDisp(i4)
+					vel(i2,i1) = r_1*nodeAcc(i4)
+					acc(i2,i1) = r_1*nodeVel(i4)
+				endif
 			enddo
 		enddo
 		
@@ -545,12 +549,69 @@ module AStrO_r_elementEqns
 			    i4 = i2 + i3
 				i5 = dofTable(1,i4)
 				i6 = dofTable(2,i4)
-				disp(i5,i6) = internalDisp(i1+i3)
-				pDisp(i5,i6) = prevIntDisp(i1+i3)
+				disp(i5,i6) = r_1*internalDisp(i1+i3)
+				pDisp(i5,i6) = r_1*prevIntDisp(i1+i3)
 			enddo
 		endif
 		
 	end subroutine r_getElementSolution
+	
+	subroutine r_adjustABD(ABD,locNds,elNum)
+	    implicit none
+		
+		integer, intent(in) :: elNum
+		real*8, intent(in) :: locNds(3,10)
+		real*8, intent(out) :: ABD(9,9)
+		
+		real*8 :: dxds(3,3), dsdx(3,3), Ns(11,3), thickness, zOff, aspRat
+		real*8 :: sXvec(3), sYvec(3), xLen, yLen
+		real*8 :: spt(3), det, dp, mag
+		integer :: i1, i2, i3, eType
+
+        eType = elementType(elNum)		
+		spt(:) = r_0
+		call r_EvalNs(Ns, sPt, eType)
+		dxds(:,:) = r_0
+		do i1 = 1, 3
+		    do i2 = 1, 3
+			    do i3 = 1, 4
+				    dxds(i1,i2) = dxds(i1,i2) + locNds(i1,i3)*Ns(i3,i2)
+				enddo
+			enddo
+		enddo
+		dxds(3,3) = r_1
+		
+		call r_getDetInv(det,dsdx,dxds)
+		
+		sXvec(:) = dsdx(:,1)
+		dp = sXvec(1)*sXvec(1) + sXvec(2)*sXvec(2)
+		call r_sqrt(mag,dp)
+		if(eType .eq. 41) then
+		    sXvec(:) = (r_2/mag)*sXvec(:)
+		else
+		    sXvec(:) = (r_1/mag)*sXvec(:)
+		endif
+		xLen = dxds(1,1)*sXvec(1) + dxds(1,2)*sXvec(2)
+		
+		sYvec(:) = dsdx(:,2)
+		dp = sYvec(1)*sYvec(1) + sYvec(2)*sYvec(2)
+		call r_sqrt(mag,dp)
+		if(eType .eq. 41) then
+		    sYvec(:) = (r_2/mag)*sYvec(:)
+		else
+		    sYvec(:) = (r_1/mag)*sYvec(:)
+		endif
+		yLen = dxds(2,1)*sYvec(1) + dxds(2,2)*sYvec(2)
+		
+		call r_getElThickOffset(thickness,zOff,elNum)
+		
+		aspRat = thickness/xLen
+		ABD(7,7) = 0.05d0*ABD(1,1)*aspRat*aspRat*ABD(7,7)/ABD(3,3)
+		
+		aspRat = thickness/yLen
+		ABD(8,8) = 0.05d0*ABD(2,2)*aspRat*aspRat*ABD(8,8)/ABD(3,3)
+	 
+	end subroutine r_adjustABD
 	
 	subroutine r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 	    locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, & 
@@ -681,21 +742,183 @@ module AStrO_r_elementEqns
         return
     end subroutine r_getNLStrain
 	
-	subroutine r_getShellDef(def,ux,rot,rx)
+	subroutine r_getShellDef(def,ux,rx,Nvec,Nx,orient,instOri,dv,dv2,dofTable)
 	    implicit none
 		
+		integer, intent(in) :: dv, dv2, dofTable(2,33)
 		real*8, intent(out) :: def(9)
-		real*8, intent(in) :: ux(3,3), rot(3), rx(3,3)
+		real*8, intent(in) :: ux(3,3), rx(3,3), Nvec(11), Nx(11,3), orient(3,3), instOri(3,48)
 		
-		def(1) = ux(1,1)
-		def(2) = ux(2,2)
-		def(3) = ux(1,2) + ux(2,1)
-		def(4) = rx(2,1)
-		def(5) = -rx(1,2)
-		def(6) = rx(2,2) - rx(1,1)
-		def(7) = ux(3,1) + rot(2)
-		def(8) = ux(3,2) - rot(1)
-		def(9) = r_2*rot(3) - ux(2,1) + ux(1,2)
+		real*8 :: uxL(3,3), rxL(3,3), del1(3), del2(3)
+		integer :: i1, i2, i3, nd, var, nd2, var2, stCol1, stCol2, stCol3, stCol12, stCol13, stCol23
+		
+		if((dv + dv2) .eq. 0) then
+		    uxL(:,:) = r_0
+		    do i1 = 1, 3
+			    do i2 = 1, 3
+				    do i3 = 1, 3
+					    uxL(i1,i2) = uxL(i1,i2) + orient(i1,i3)*ux(i3,i2)
+					enddo
+				enddo
+			enddo
+			def(1) = uxL(1,1) + r_p5*(ux(1,1)*ux(1,1) + ux(2,1)*ux(2,1) + ux(3,1)*ux(3,1))
+			def(2) = uxL(2,2) + r_p5*(ux(1,2)*ux(1,2) + ux(2,2)*ux(2,2) + ux(3,2)*ux(3,2))
+			def(3) = uxL(1,2) + uxL(2,1) + ux(1,1)*ux(1,2) + ux(2,1)*ux(2,2) + ux(3,1)*ux(3,2)
+			
+			rxL(:,:) = r_0			
+			do i1 = 1, 3
+			    stCol1 = 3*i1
+			    do i2 = 1, 3
+				    do i3 = 1, 3
+					    rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol1+i3)*rx(i1,i2)
+						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol1+i3)*rx(i1,i2)
+					enddo
+				enddo
+			enddo
+			def(4) = rxL(2,1)
+			def(5) = -rxL(1,2)
+			def(6) = rxL(2,2) - rxL(1,1)
+			
+			del1(:) = (/r_1,r_0,r_0/)
+			del2(:) = (/r_0,r_1,r_0/)
+			def(7:9) = r_0
+			do i1 = 1, 3
+			    def(7) = def(7) + (del1(i1) + ux(i1,1))*instOri(3,i1)
+				def(8) = def(8) + (del2(i1) + ux(i1,2))*instOri(3,i1)
+				def(9) = def(9) + (del1(i1) + ux(i1,1))*instOri(2,i1) - (del2(i1) + ux(i1,2))*instOri(1,i1)
+			enddo
+		elseif(dv*dv2 .eq. 0) then
+		    if(dv .ne. 0) then
+			    var = dofTable(1,dv)
+			    nd = dofTable(2,dv)
+			else
+			    var = dofTable(1,dv2)
+				nd = dofTable(2,dv2)
+			endif
+			if(var .le. 3) then
+				def(1) = orient(1,var)*Nx(nd,1) + Nx(nd,1)*ux(var,1)
+				def(2) = orient(2,var)*Nx(nd,2) + Nx(nd,2)*ux(var,2)
+				def(3) = orient(1,var)*Nx(nd,2) + orient(2,var)*Nx(nd,1) + Nx(nd,1)*ux(var,2) + Nx(nd,2)*ux(var,1)
+				
+				def(4:6) = r_0
+				
+				def(7) = Nx(nd,1)*instOri(3,var)
+				def(8) = Nx(nd,2)*instOri(3,var)
+				def(9) = Nx(nd,1)*instOri(2,var) - Nx(nd,2)*instOri(1,var)
+			else
+			    def(1:3) = r_0
+				
+				rxL(:,:) = r_0
+				stCol2 = 3*(var-3)
+				do i1 = 1, 3
+					stCol1 = 3*i1
+					stCol12 = 12*(var-3)
+					do i2 = 1, 3
+						do i3 = 1, 3
+							rxL(1,i2) = rxL(1,i2) + instOri(3,stCol2+i3)*Nvec(nd)*instOri(2,stCol1+i3)*rx(i1,i2)
+							rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol12+i3)*Nvec(nd)*rx(i1,i2) 
+							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol2+i3)*Nvec(nd)*instOri(3,stCol1+i3)*rx(i1,i2)
+							rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol12+i3)*Nvec(nd)*rx(i1,i2) 
+						enddo
+					enddo
+				enddo
+				
+				do i2 = 1, 3
+				    do i3 = 1, 3
+					    rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol2+i3)*Nx(nd,i2)
+						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol2+i3)*Nx(nd,i2)
+					enddo
+				enddo
+				
+				def(4) = rxL(2,1)
+			    def(5) = -rxL(1,2)
+			    def(6) = rxL(2,2) - rxL(1,1)
+				
+				def(7:9) = r_0
+				do i1 = 1, 3
+					def(7) = def(7) + (del1(i1) + ux(i1,1))*instOri(3,stCol2+i1)*Nvec(nd)
+					def(8) = def(8) + (del2(i1) + ux(i1,2))*instOri(3,stCol2+i1)*Nvec(nd)
+					def(9) = def(9) + (del1(i1) + ux(i1,1))*instOri(2,stCol2+i1)*Nvec(nd)
+                 	def(9) = def(9) - (del2(i1) + ux(i1,2))*instOri(1,stCol2+i1)*Nvec(nd)
+				enddo
+			endif
+		else
+		    if(dofTable(1,dv) .lt. dofTable(1,dv2)) then
+		        var = dofTable(1,dv)
+			    nd = dofTable(2,dv)
+			    var2 = dofTable(1,dv2)
+			    nd2 = dofTable(2,dv2)
+			else
+			    var = dofTable(1,dv2)
+			    nd = dofTable(2,dv2)
+			    var2 = dofTable(1,dv)
+			    nd2 = dofTable(2,dv)
+			endif
+			if(var .le. 3 .and. var2 .le. 3) then
+			    def(:) = r_0
+			    if(var .eq. var2) then
+					def(1) = Nx(nd,1)*Nx(nd2,1)
+					def(2) = Nx(nd,2)*Nx(nd2,2)
+					def(3) = Nx(nd,1)*Nx(nd2,2) + Nx(nd2,1)*Nx(nd,2)
+				endif
+			elseif(var .gt. 3 .and. var2 .gt. 3) then
+			    def(1:3) = r_0
+				stCol2 = 3*(var-3)
+				stCol3 = 3*(var2-3)
+				stCol23 = 12*(var-3) + 3*(var2-3)
+				rxL(:,:) = r_0
+				do i1 = 1, 3
+				    stCol1 = 3*i1
+					stCol12 = 12*i1 + 3*(var-3)
+					stCol13 = 12*i1 + 3*(var2-3)
+					do i2 = 1, 3
+					    do i3 = 1, 3
+						    rxL(1,i2) = rxL(1,i2) + instOri(3,stCol23+i3)*Nvec(nd2)*Nvec(nd)*instOri(2,stCol1+i3)*rx(i1,i2) 
+							rxL(1,i2) = rxL(1,i2) + instOri(3,stCol2+i3)*Nvec(nd)*instOri(2,stCol13+i3)*Nvec(nd2)*rx(i1,i2)
+							rxL(1,i2) = rxL(1,i2) + instOri(3,stCol3+i3)*Nvec(nd2)*instOri(2,stCol12+i3)*Nvec(nd2)*rx(i1,i2)
+							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol23+i3)*Nvec(nd2)*Nvec(nd)*instOri(3,stCol1+i3)*rx(i1,i2)
+							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol2+i3)*Nvec(nd)*instOri(3,stCol13+i3)*Nvec(nd2)*rx(i1,i2)
+							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol3+i3)*Nvec(nd2)*instOri(3,stCol12+i3)*Nvec(nd2)*rx(i1,i2)
+						enddo
+					enddo
+				enddo
+                                
+				stCol1 = 3*(var-3)
+				stCol2 = 3*(var2-3)
+				stCol12 = 12*(var-3) + 3*(var2-3)
+				do i2 = 1, 3
+					do i3 = 1, 3
+						rxL(1,i2) = rxL(1,i2) + instOri(3,stCol1+i3)*Nvec(nd)*instOri(2,stCol2+i3)*Nx(nd2,i2)
+						rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol12+i3)*Nvec(nd)*Nx(nd2,i2)
+						rxL(1,i2) = rxL(1,i2) + instOri(3,stCol2+i3)*Nvec(nd2)*instOri(2,stCol1+i3)*Nx(nd,i2)
+						rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol12+i3)*Nvec(nd2)*Nx(nd,i2)
+						rxL(2,i2) = rxL(2,i2) + instOri(1,stCol1+i3)*Nvec(nd)*instOri(3,stCol2+i3)*Nx(nd2,i2)
+						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol12+i3)*Nvec(nd)*Nx(nd2,i2)
+						rxL(2,i2) = rxL(2,i2) + instOri(1,stCol2+i3)*Nvec(nd2)*instOri(3,stCol1+i3)*Nx(nd,i2)
+						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol12+i3)*Nvec(nd2)*Nx(nd,i2)
+					enddo
+				enddo
+				
+				def(4) = rxL(2,1)
+			    def(5) = -rxL(1,2)
+			    def(6) = rxL(2,2) - rxL(1,1)
+				
+				stCol12 = 12*(var-3) + 3*(var2-3)
+				def(7:9) = r_0
+				do i1 = 1, 3
+					def(7) = def(7) + (del1(i1) + ux(i1,1))*instOri(3,stCol12+i1)*Nvec(nd)*Nvec(nd2)
+					def(8) = def(8) + (del2(i1) + ux(i1,2))*instOri(3,stCol12+i1)*Nvec(nd)*Nvec(nd2)
+					def(9) = def(9) + (del1(i1) + ux(i1,1))*instOri(2,stCol12+i1)*Nvec(nd)*Nvec(nd2)
+					def(9) = def(9) - (del2(i1) + ux(i1,2))*instOri(1,stCol12+i1)*Nvec(nd)*Nvec(nd2)
+				enddo
+			else
+			    def(:) = r_0
+				stCol1 = 3*(var2-3)
+				def(7) = Nx(nd,1)*instOri(3,stCol1+var)*Nvec(nd2)
+				def(8) = Nx(nd,2)*instOri(3,stCol1+var)*Nvec(nd2)
+				def(9) = Nx(nd,1)*instOri(2,stCol1+var)*Nvec(nd2) - Nx(nd,2)*instOri(1,stCol1+var)*Nvec(nd2)
+			endif
+		endif
 		
 	end subroutine r_getShellDef
 	
@@ -706,73 +929,71 @@ module AStrO_r_elementEqns
 		real*8, intent(in) :: ux(3,3), rot(3), rx(3,3)
 		
 		def(1) = ux(1,1)
-		def(2) = ux(2,1)
-		def(3) = ux(3,1)
+		def(2) = ux(2,1) - rot(3)
+		def(3) = ux(3,1) + rot(2)
 		def(4) = rx(1,1)
 		def(5) = rx(2,1)
 		def(6) = rx(3,1)
 		
 	end subroutine r_getBeamDef
 	
-	subroutine r_getInstOrient(instOri,drIdrG,locOri,rot)
+	subroutine r_getInstOrient(instOri,locOri,rot)
 	    implicit none
 		
-		real*8, intent(out) :: instOri(3,48), drIdrG(3,16)
+		real*8, intent(out) :: instOri(3,48)
 		real*8, intent(in) :: locOri(3,3), rot(3)
 		
-		real*8 :: prod(3,3), tempAl(3,3), tempAl2(3,3)
+		real*8 :: tempAl(3,3)
 		
-		integer :: i1, i2, i3, i4, i5
+		integer :: i1, i2, i3, i4, i5, st1, st2, st12
 		
 		call r_rotateAlpha(instOri(:,1:3),locOri,rot,0,0)
 		do i1 = 1, 3
 		    call r_rotateAlpha(tempAl,locOri,rot,i1,0)
-			i3 = 12*i1                    !! First column = 12*i1 + 3*i2
-			instOri(:,i3+1:i3+3) = tempAl
-			i3 = 3*i1
-			instOri(:,i3+1:i3+3) = tempAl
-			prod(:,:) = r_0
-			do i2 = 1,3
-			    do i3 = 1, 3
-				    do i4 = 1, 3
-					    prod(i2,i3) = prod(i2,i3) + tempAl(i2,i4)*instOri(i3,i4)
-					enddo
-				enddo
-			enddo
-			i3 = 4*i1                     !! Column = 4*i1 + i2
-			drIdrG(1,i3) = prod(2,3)
-			drIdrG(2,i3) = prod(3,1)
-			drIdrG(3,i3) = prod(1,2)
-			i3 = i1
-			drIdrG(1,i3) = prod(2,3)
-			drIdrG(2,i3) = prod(3,1)
-			drIdrG(3,i3) = prod(1,2)
+			st1 = 12*i1                    !! First column = 12*i1 + 3*i2
+			instOri(:,st1+1:st1+3) = tempAl
+			st1 = 3*i1
+			instOri(:,st1+1:st1+3) = tempAl
 			do i2 = i1, 3
 			    call r_rotateAlpha(tempAl,locOri,rot,i1,i2)
-				i3 = 12*i1 + 3*i2                    !! First column = 12*i1 + 3*i2
-				instOri(:,i3+1:i3+3) = tempAl
-				i3 = 12*i2 + 3*i1
-				instOri(:,i3+1:i3+3) = tempAl
-				prod(:,:) = r_0
-				do i3 = 1,3
-					do i4 = 1, 3
-						do i5 = 1, 3
-							prod(i3,i4) = prod(i3,i4) + tempAl(i3,i5)*instOri(i4,i5)
-						enddo
-					enddo
-				enddo
-				i3 = 4*i1 + i2                     !! Column = 4*i1 + i2
-				drIdrG(1,i3) = prod(2,3)
-				drIdrG(2,i3) = prod(3,1)
-				drIdrG(3,i3) = prod(1,2)
-				i3 = 4*i2 + i1
-				drIdrG(1,i3) = prod(2,3)
-				drIdrG(2,i3) = prod(3,1)
-				drIdrG(3,i3) = prod(1,2)
+				st12 = 12*i1 + 3*i2                    !! First column = 12*i1 + 3*i2
+				instOri(:,st12+1:st12+3) = tempAl
+				st12 = 12*i2 + 3*i1
+				instOri(:,st12+1:st12+3) = tempAl
 			enddo
 		enddo
 		
 	end subroutine r_getInstOrient
+	
+	subroutine r_getdrIdrG(drIdrG,locOri,rot)
+	    implicit none
+		
+		real*8, intent(out) :: drIdrG(3,16)
+		real*8, intent(in) :: locOri(3,3), rot(3)
+		
+		real*8 :: prod(3,3), instOri(3,3), dInstOri(3,3)
+		
+		integer :: i1, i2, i3, i4, i5
+		
+		drIdrG(:,:) = r_0
+		
+		call r_rotateAlpha(instOri,locOri,rot,0,0)
+		do i1 = 1, 3
+		    call r_rotateAlpha(dInstOri,locOri,rot,i1,0)
+			prod(:,:) = r_0
+			do i2 = 1,3
+			    do i3 = 1, 3
+				    do i4 = 1, 3
+					    prod(i2,i3) = prod(i2,i3) + dInstOri(i2,i4)*instOri(i3,i4)
+					enddo
+				enddo
+			enddo
+			drIdrG(1,i1) = prod(2,3)
+			drIdrG(2,i1) = prod(3,1)
+			drIdrG(3,i1) = prod(1,2)
+		enddo
+		
+	end subroutine r_getdrIdrG
 	
 	subroutine r_getInstDof(instU,globU,globNds,instOri,locOri,rot,drIdrG,numNds,dofTable,dv,dv2)
 	    implicit none
@@ -807,10 +1028,10 @@ module AStrO_r_elementEqns
 				do i2 = 1, 3
 				   do i3 = 1, 3
 				       instU(i2+3,i1) = instU(i2+3,i1) + drIdrG(i2,i3)*delRot(i3)
-					   do i4 = 1, 3
-					       i5 = 4*i3 + i4
-						   instU(i2+3,i1) = instU(i2+3,i1) + r_p5*drIdrG(i2,i5)*delRot(i3)*delRot(i4)
-					   enddo
+					   ! do i4 = 1, 3
+					       ! i5 = 4*i3 + i4
+						   ! instU(i2+3,i1) = instU(i2+3,i1) + r_p5*drIdrG(i2,i5)*delRot(i3)*delRot(i4)
+					   ! enddo
 				   enddo
 				enddo
 			enddo
@@ -848,10 +1069,10 @@ module AStrO_r_elementEqns
 				do i2 = 1, 3
 				   do i3 = 1, 3
 				       instU(i2+3,nd) = instU(i2+3,nd) + drIdrG(i2,i3)*ddelRot(i3)
-					   do i4 = 1, 3
-					       i5 = 4*i3 + i4
-						   instU(i2+3,nd) = instU(i2+3,nd) + r_p5*drIdrG(i2,i5)*(ddelRot(i3)*delRot(i4) + delRot(i3)*ddelRot(i4))
-					   enddo
+					   ! do i4 = 1, 3
+					       ! i5 = 4*i3 + i4
+						   ! instU(i2+3,nd) = instU(i2+3,nd) + r_p5*drIdrG(i2,i5)*(ddelRot(i3)*delRot(i4) + delRot(i3)*ddelRot(i4))
+					   ! enddo
 				   enddo
 				enddo
 			endif
@@ -870,7 +1091,7 @@ module AStrO_r_elementEqns
 			nnInv = numNds
 			nnInv = r_1/nnInv
 			instU(:,:) = r_0
-			if(var .lt. 4 .and. var2 .ge. 4) then
+			if(var .lt. 4 .and. var2 .ge. 4 .and. nd .le. numNds) then
 			    i1 = 3*(var2-3)
 				instU(1:3,nd) = nnInv*instOri(:,i1+var)
 			elseif(var .ge. 4 .and. var2 .ge. 4) then
@@ -884,10 +1105,10 @@ module AStrO_r_elementEqns
 					enddo
 				enddo
 				instU(:,1:numNds) = nnInv*instU(:,1:numNds)
-				if(nd .eq. nd2) then
-				    i1 = 4*(var-3) + (var2-3)
-				    instU(4:6,nd) = drIdrG(:,i1)
-				endif
+				! if(nd .eq. nd2) then
+				    ! i1 = 4*(var-3) + (var2-3)
+				    ! instU(4:6,nd) = drIdrG(:,i1)
+				! endif
 			endif
 		endif
 		
@@ -917,8 +1138,8 @@ module AStrO_r_elementEqns
 		do i1 = 1, numNds*dofPerNd
 		    i2 = dofTable(1,i1)
 			i3 = dofTable(2,i1)
-			i4 = nDofIndex(i3,i2)
-			disp(i2) = disp(i2) + nodeDisp(i3)*Nvec(i3)
+			i4 = nDofIndex(i2,elementList(i3,elNum))
+			disp(i2) = disp(i2) + nodeDisp(i4)*Nvec(i3)
 			ddispdU(i2,i1) = ddispdU(i2,i1) + Nvec(i3)
 		enddo
 	
@@ -1081,21 +1302,18 @@ module AStrO_r_elementEqns
 		
 		rot(:) = r_0
 		do i1 = 1, numNds
-		    rot(:) = rot(:) + disp(4:6,i1)
+		    rot(:) = rot(:) + disp(4:6,i1)*Nvec(i1)
 		enddo
-		rnNds = numNds
-		rot(:) = (r_1/rnNds)*rot(:)
 		
-		call r_getInstOrient(instOri,drIdrG,orient,rot)
-		call r_getInstDof(instU,disp,globNds,instOri,orient,rot,drIdrG,numNds,dofTable,0,0)
+		call r_getInstOrient(instOri,orient,rot)
 		
 		ux(:,:) = r_0
 		rx(:,:) = r_0
 		do i1 = 1, 3
 		    do i2 = 1, 3
 			    do i3 = 1, 10
-				    ux(i1,i2) = ux(i1,i2) + instU(i1,i3)*Nx(i3,i2)
-					rx(i1,i2) = rx(i1,i2) + instU(i1+3,i3)*Nx(i3,i2)
+				    ux(i1,i2) = ux(i1,i2) + disp(i1,i3)*Nx(i3,i2)
+					rx(i1,i2) = rx(i1,i2) + disp(i1+3,i3)*Nx(i3,i2)
 				enddo
 			enddo
 		enddo
@@ -1107,7 +1325,7 @@ module AStrO_r_elementEqns
 			enddo
 		enddo
 		
-		call r_getShellDef(shDef,ux,ptRot,rx)
+		call r_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,0,0,dofTable)
 		ptT = r_0
 		do i2 = 1, numNds
 			ptT = ptT + Nvec(i2)*temp(i2)
@@ -1156,52 +1374,31 @@ module AStrO_r_elementEqns
 		
 		rot(:) = r_0
 		do i1 = 1, numNds
-		    rot(:) = rot(:) + disp(4:6,i1)
+		    rot(:) = rot(:) + disp(4:6,i1)*Nvec(i1)
 		enddo
-		rnNds = numNds
-		rot(:) = (r_1/rnNds)*rot(:)
 		
-		call r_getInstOrient(instOri,drIdrG,orient,rot)
-		i1 = numNds*dofPerNd + numIntDof
-		do i5 = 1, i1
-			call r_getInstDof(instU,disp,globNds,instOri,orient,rot,drIdrG,numNds,dofTable,i5,0)
-			
-			ux(:,:) = r_0
-			rx(:,:) = r_0
-			if(dofTable(1,i5) .le. 3) then
-			    i3 = dofTable(2,i5)
-				do i1 = 1, 3
-					do i2 = 1, 3
-						ux(i1,i2) = ux(i1,i2) + instU(i1,i3)*Nx(i3,i2)
-					enddo
-				enddo
-			else
-			    i4 = dofTable(2,i5)
-			    do i1 = 1, 3
-					do i2 = 1, 3
-						do i3 = 1, 10
-							ux(i1,i2) = ux(i1,i2) + instU(i1,i3)*Nx(i3,i2)
-						enddo
-						rx(i1,i2) = rx(i1,i2) + instU(i1+3,i4)*Nx(i4,i2)
-					enddo
-				enddo
-				i4 = dofTable(1,i5) - 3
-			endif
-			
-			ptRot(:) = r_0
-			do i1 = 1, 3
-				do i2 = 1, numNds
-					ptRot(i1) = ptRot(i1) + instU(i1+3,i2)*Nvec(i2)
+		call r_getInstOrient(instOri,orient,rot)
+		
+		ux(:,:) = r_0
+		rx(:,:) = r_0
+		do i1 = 1, 3
+		    do i2 = 1, 3
+			    do i3 = 1, 10
+				    ux(i1,i2) = ux(i1,i2) + disp(i1,i3)*Nx(i3,i2)
+					rx(i1,i2) = rx(i1,i2) + disp(i1+3,i3)*Nx(i3,i2)
 				enddo
 			enddo
-			
-			call r_getShellDef(dsDdU(:,i5),ux,ptRot,rx)
+		enddo
+		
+		i1 = numNds*dofPerNd + numIntDof
+		do i5 = 1, i1
+			call r_getShellDef(dsDdU(:,i5),ux,rx,Nvec,Nx,orient,instOri,i5,0,dofTable)
 			dfMdU(:,i5) = r_0
 			do i2 = 1, 9
 				do i3 = 1, 9
 					dfMdU(i2,i5) = dfMdU(i2,i5) + ABD(i2,i3)*dsDdU(i3,i5)
 				enddo
-			enddo	
+			enddo
 		enddo
         
         dfMdT(:,:) = r_0
@@ -1252,7 +1449,17 @@ module AStrO_r_elementEqns
 		rnNds = numNds
 		rot(:) = (r_1/rnNds)*rot(:)
 		
-		call r_getInstOrient(instOri,drIdrG,orient,rot)
+		call r_getInstOrient(instOri,orient,rot)
+		
+		rot(:) = r_0
+		do i1 = 1, numNds
+		    rot(:) = rot(:) + pDisp(4:6,i1)
+		enddo
+		rnNds = numNds
+		rot(:) = (r_1/rnNds)*rot(:)
+		
+		call r_getdrIdrG(drIdrG,orient,rot)
+		
 		call r_getInstDof(instU,disp,globNds,instOri,orient,rot,drIdrG,numNds,dofTable,0,0)
 		
 		ux(:,:) = r_0
@@ -1327,7 +1534,17 @@ module AStrO_r_elementEqns
 		rnNds = numNds
 		rot(:) = (r_1/rnNds)*rot(:)
 		
-		call r_getInstOrient(instOri,drIdrG,orient,rot)
+		call r_getInstOrient(instOri,orient,rot)
+		
+		rot(:) = r_0
+		do i1 = 1, numNds
+		    rot(:) = rot(:) + pDisp(4:6,i1)
+		enddo
+		rnNds = numNds
+		rot(:) = (r_1/rnNds)*rot(:)
+		
+		call r_getdrIdrG(drIdrG,orient,rot)
+		
 		i1 = numNds*dofPerNd + numIntDof
 		do i5 = 1, i1
 			call r_getInstDof(instU,disp,globNds,instOri,orient,rot,drIdrG,numNds,dofTable,i5,0)
@@ -1738,7 +1955,7 @@ module AStrO_r_elementEqns
 
         eType = elementType(elNum)		
 		call r_getElRuk(dSEdU,dRdU,dRdT,stEn,dSEdT,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
+	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
 		
 	end subroutine r_getElStrainEnergy
 	
@@ -1836,7 +2053,15 @@ module AStrO_r_elementEqns
 			nnInv = numNds
 			nnInv = r_1/nnInv
 			statRot(:) = nnInv*statRot(:)
-			call r_getInstOrient(statInOri,statdrIdrG,orient,statRot)
+			call r_getInstOrient(statInOri,orient,statRot)
+			statRot(:) = r_0
+			do i4 = 1, numNds
+				statRot(:) = statRot(:) + pDisp(4:6,i4)
+			enddo
+			nnInv = numNds
+			nnInv = r_1/nnInv
+			statRot(:) = nnInv*statRot(:)
+			call r_getdrIdrG(statdrIdrG,orient,statRot)
 			statInOri(:,4:48) = r_0
 			statdrIdrG(:,4:16) = r_0
 		    do i1 = 1, numNds
@@ -2203,14 +2428,14 @@ module AStrO_r_elementEqns
 	end subroutine r_getElRt
 	
 	subroutine r_getElRuk(Ruk,dRdU,dRdT,stEn,dSEdT,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable, &
-	    intPts,ipWt,locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
+	    intPts,ipWt,locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
 	    implicit none
 		
 		real*8, intent(out) :: Ruk(33), dRdU(33,33), dRdT(33,10), stEn, dSEdT(10)
 		integer, intent(in) :: buildMat, eType, numNds, dofPerNd, numIntDof, numIntPts, dofTable(2,33)
 		real*8, intent(in) :: intPts(3,8), ipWt(8), locNds(3,10), globNds(3,10)
 		real*8, intent(in) :: orient(3,3), cMat(6,6), tExp(6), ABD(9,9), stExp(6), bStiff(6,6), btExp(6)
-		real*8, intent(in) :: temp(10), disp(6,11)
+		real*8, intent(in) :: temp(10), disp(6,11), pDisp(6,11)
 		
 		real*8 :: dedU(9,33), cdedU(9,33)
 		real*8 :: instOri(3,48), drIdrG(3,16), elRot(3), ptRot(3)
@@ -2220,19 +2445,8 @@ module AStrO_r_elementEqns
 		real*8 :: strain(6), stress(6)
 		real*8 :: shDef(9), shFrcMom(9), beamDef(6), beamFrcMom(6), ux(3,3), rx(3,3)
 		real*8 :: dfmdT(9,10), dsdT(6,10)
-		real*8 :: duxdR(3,9)
 		real*8 :: ptTemp, teProd, r3Fact
 		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, nd1, var1, nd2, var2
-		
-		if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
-			nnReal = numNds
-			elRot(:) = r_0
-			do i1 = 1, numNds
-			    elRot(:) = elRot(:) + disp(4:6,i1)
-			enddo
-			elRot(:) = (r_1/nnReal)*elRot(:)
-			call r_getInstOrient(instOri,drIdrG,orient,elRot)
-		endif
 		
 		Ruk(:) = r_0
 		dRdU(:,:) = r_0
@@ -2242,25 +2456,31 @@ module AStrO_r_elementEqns
 		do i1 = 1, numIntPts
 		    call r_getIntPtData(Nvec,Nx,detJ,locNds,intPts(:,i1),eType,numNds)
 			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
-			    call r_getInstDof(instDofMat,disp,globNds,instOri,orient,elRot,drIdrG,numNds,dofTable,0,0)
 			    ptRot(:) = r_0
 				do i2 = 1, numNds
 				    do i3 = 1, 3
-				        ptRot(i3) = ptRot(i3) + instDofMat(3+i3,i2)*Nvec(i2)
+				        ptRot(i3) = ptRot(i3) + disp(3+i3,i2)*Nvec(i2)
 					enddo
 				enddo
-			    ux(:,:) = r_0
-				rx(:,:) = r_0
-			    do i2 = 1, 3
+				call r_getInstOrient(instOri,orient,ptRot)
+				ux(:,:) = r_0
+				do i2 = 1, 3
 				    do i3 = 1, 3
 					    do i4 = 1, 10
-						    ux(i2,i3) = ux(i2,i3) + instDofMat(i2,i4)*Nx(i4,i3)
-							rx(i2,i3) = rx(i2,i3) + instDofMat(i2+3,i4)*Nx(i4,i3)
+							ux(i2,i3) = ux(i2,i3) + disp(i2,i4)*Nx(i4,i3)
+						enddo
+					enddo
+				enddo
+				rx(:,:) = r_0
+				do i2 = 1, 3
+				    do i3 = 1, 3
+					    do i4 = 1, numNds
+							rx(i2,i3) = rx(i2,i3) + disp(i2+3,i4)*Nx(i4,i3)
 						enddo
 					enddo
 				enddo
 				if(eType .eq. 41 .or. eType .eq. 3) then
-					call r_getShellDef(shDef,ux,ptRot,rx)
+				    call r_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,0,0,dofTable)
 					ptTemp = r_0
 					do i2 = 1, numNds
 						ptTemp = ptTemp + Nvec(i2)*temp(i2)
@@ -2278,158 +2498,104 @@ module AStrO_r_elementEqns
 						dSEdT(1:numNds) = dSEdT(1:numNds) + r_p5*dfMdT(i2,1:numNds)*shDef(i2)*detJ*ipWt(i1)
 					enddo
 				else
-				    call r_getBeamDef(beamDef,ux,ptRot,rx)
-					ptTemp = r_0
-					do i2 = 1, numNds
-						ptTemp = ptTemp + Nvec(i2)*temp(i2)
-					enddo
-					beamFrcMom(:) = r_0
-					do i2 = 1, 6
-						do i3 = 1, 6
-							beamFrcMom(i2) = beamFrcMom(i2) + bStiff(i2,i3)*beamDef(i3)
-						enddo
-					enddo
-					beamFrcMom(1:6) = beamFrcMom(1:6) - ptTemp*btExp(1:6)
-					do i2 = 1, 6
-					    stEn = stEn + r_p5*beamFrcMom(i2)*beamDef(i2)*detJ*ipWt(i1)
-					    dfMdT(i2,1:numNds) = -Nvec(1:numNds)*btExp(i2)
-						dSEdT(1:numNds) = dSEdT(1:numNds) + r_p5*dfMdT(i2,1:numNds)*beamDef(i2)*detJ*ipWt(i1)
-					enddo
+				
 				endif
 				i2 = numNds*dofPerNd + numIntDof
-				do i4 = 1, i2
-				    call r_getInstDof(instDofMat,disp,globNds,instOri,orient,elRot,drIdrG,numNds,dofTable,i4,0)
-					ptRot(:) = r_0
-					do i5 = 1, numNds
-						ptRot(:) = ptRot(:) + instDofMat(4:6,i5+i3)*Nvec(i5)
-					enddo
-					ux(:,:) = r_0
-					rx(:,:) = r_0
-					if(dofTable(1,i4) .lt. 4) then  !! differentiating wrt displacement dof
-					    i7 = dofTable(2,i4)
-						do i5 = 1, 3
-							do i6 = 1, 3
-								ux(i5,i6) = ux(i5,i6) + instDofMat(i5,i7)*Nx(i7,i6)
-							enddo
-						enddo
-					else  !! wrt rotation dof
-					    i9 = dofTable(1,i4) - 3
-						do i6 = 1, 3
-							do i7 = 1, 3
-								do i8 = 1, numNds
-									ux(i6,i7) = ux(i6,i7) + instDofMat(i6,i8)*Nx(i8,i7)
-								enddo
-							enddo
-						enddo							
-						i5 = dofTable(2,i4)
-						do i6 = 1, 3
-							do i7 = 1, 3
-								rx(i6,i7) = rx(i6,i7) + instDofMat(i6+3,i5)*Nx(i5,i7)
-							enddo
-						enddo
-					endif
-					if(eType .eq. 41 .or. eType .eq. 3) then
-						call r_getShellDef(shDef,ux,ptRot,rx)
+				do i3 = 1, i2
+				    if(eType .eq. 41 .or. eType .eq. 3) then
+						call r_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,i3,0,dofTable)
 						if(buildMat .eq. 1) then
-						    dedU(:,i4) = shDef(:)
+						    dedU(:,i3) = shDef(:)
 							teProd = r_0
 							do i5 = 1, 6
-							    teProd = teProd - stExp(i5)*dedU(i5,i4) 
+							    teProd = teProd - stExp(i5)*dedU(i5,i3) 
 							enddo
 							teProd = (detJ*ipWt(i1))*teProd
-							dRdT(i4,1:numNds) = dRdT(i4,1:numNds) + teProd*Nvec(1:numNds)
+							dRdT(i3,1:numNds) = dRdT(i3,1:numNds) + teProd*Nvec(1:numNds)
 						endif
 						shDef = (detJ*ipWt(i1))*shDef
 						do i5 = 1, 9
-							Ruk(i4) = Ruk(i4) + shFrcMom(i5)*shDef(i5)
+							Ruk(i3) = Ruk(i3) + shFrcMom(i5)*shDef(i5)
 						enddo
 					else
 					    call r_getBeamDef(beamDef,ux,ptRot,rx)
 						if(buildMat .eq. 1) then
-						    dedU(1:6,i4) = beamDef(:)
+						    dedU(1:6,i3) = beamDef(:)
 							teProd = r_0
 							do i5 = 1, 6
-							    teProd = teProd - btExp(i5)*dedU(i5,i4) 
+							    teProd = teProd - btExp(i5)*dedU(i5,i3) 
 							enddo
 							teProd = (detJ*ipWt(i1))*teProd
-							dRdT(i4,1:numNds) = dRdT(i4,1:numNds) + teProd*Nvec(1:numNds)
+							dRdT(i3,1:numNds) = dRdT(i3,1:numNds) + teProd*Nvec(1:numNds)
 						endif
 						beamDef = (detJ*ipWt(i1))*beamDef
 						do i5 = 1, 6
-						    Ruk(i4) = Ruk(i4) + beamFrcMom(i5)*beamDef(i5)
+						    Ruk(i3) = Ruk(i3) + beamFrcMom(i5)*beamDef(i5)
 						enddo
 					endif
-					if(buildMat .eq. 1) then
-					    do i10 = i4, i2
-							call r_getInstDof(instDofMat,disp,globNds,instOri,orient,elRot,drIdrG,numNds,dofTable,i4,i10)
-							ptRot(:) = r_0
-							do i5 = 1, numNds
-								ptRot(:) = ptRot(:) + instDofMat(4:6,i5+i3)*Nvec(i5)
-							enddo
-							if(dofTable(1,i4) .lt. dofTable(1,i10)) then
-							    var1 = dofTable(1,i4)
-								nd1 = dofTable(2,i4)
-								var2 = dofTable(1,i10)
-								nd2 = dofTable(2,i10)
-							else
-							    var1 = dofTable(1,i10)
-								nd1 = dofTable(2,i10)
-								var2 = dofTable(1,i4)
-								nd2 = dofTable(2,i4)
-							endif
-							ux(:,:) = r_0
-							rx(:,:) = r_0
-							if(var1 .lt. 4 .and. var2 .ge. 4) then  !! differentiating wrt displacement dof
-								do i5 = 1, 3
-									do i6 = 1, 3
-										ux(i5,i6) = ux(i5,i6) + instDofMat(i5,nd1)*Nx(nd1,i6)
-										rx(i5,i6) = rx(i5,i6) + instDofMat(i5+3,nd2)*Nx(nd2,i6)
-									enddo
-								enddo
-							elseif(var1 .ge. 4 .and. var2 .ge. 4) then !! wrt rotation dof
-								do i6 = 1, 3
-									do i7 = 1, 3
-										do i8 = 1, numNds
-											ux(i6,i7) = ux(i6,i7) + instDofMat(i6,i8)*Nx(i8,i7)
-										enddo
-									enddo
-								enddo							
-								if(nd1 .eq. nd2) then
-									do i6 = 1, 3
-										do i7 = 1, 3
-											rx(i6,i7) = rx(i6,i7) + instDofMat(i6+3,nd1)*Nx(nd1,i7)
-										enddo
-									enddo
-								endif
-							endif
-							if(eType .eq. 41 .or. eType .eq. 3) then
-								call r_getShellDef(shDef,ux,ptRot,rx)
+					if(buildMat .eq. 1 .and. nLGeom .eq. 1) then
+					    do i4 = i3, i2
+						    if(eType .eq. 41 .or. eType .eq. 3) then
+							    call r_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,i3,i4,dofTable)
 								shDef = (detJ*ipWt(i1))*shDef
 								do i5 = 1, 9
-									dRdU(i4,i10) = dRdU(i4,i10) + shFrcMom(i5)*shDef(i5)
+								    dRdU(i3,i4) = dRdU(i3,i4) + shFrcMom(i5)*shDef(i5)
 								enddo
-								dRdU(i10,i4) = dRdU(i4,i10)
+								dRdU(i4,i3) = dRdU(i3,i4)
 							else
-								call r_getBeamDef(beamDef,ux,ptRot,rx)
-								beamDef = (detJ*ipWt(i1))*beamDef
-								do i5 = 1, 6
-									dRdU(i4,i10) = dRdU(i4,i10) + beamFrcMom(i5)*beamDef(i5)
-								enddo
-								dRdU(i10,i4) = dRdU(i4,i10)
-							endif					    
+							
+							endif
 						enddo
 					endif
 				enddo
+				if(buildMat .eq. 1) then
+				    cdedU(:,:) = r_0
+					if(eType .eq. 41 .or. eType .eq. 3) then
+						i5 = numNds*dofPerNd + numIntDof
+						do i2 = 1, 9
+							do i3 = 1, i5
+								do i4 = 1, 9
+									cdedU(i2,i3) = cdedU(i2,i3) + ABD(i2,i4)*dedU(i4,i3)
+								enddo
+							enddo
+						enddo
+						cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
+						do i2 = 1, i5
+							do i3 = 1, i5
+								do i4 = 1, 9
+									dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
+								enddo
+							enddo
+						enddo
+					elseif(eType .eq. 2) then
+						i5 = numNds*dofPerNd + numIntDof
+						do i2 = 1, 6
+							do i3 = 1, i5
+								do i4 = 1, 6
+									cdedU(i2,i3) = cdedU(i2,i3) + bStiff(i2,i4)*dedU(i4,i3)
+								enddo
+							enddo
+						enddo
+						cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
+						do i2 = 1, i5
+							do i3 = 1, i5
+								do i4 = 1, 6
+									dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
+								enddo
+							enddo
+						enddo
+					endif
+				endif
 			else
 			    ux(:,:) = r_0
 				do i2 = 1, 3
 				    do i3 = 1, 3
 					    do i4 = 1, 11
-						    ux(i2,i3) = ux(i2,i3) + disp(i2,i4)*Nx(i4,i3)
+							ux(i2,i3) = ux(i2,i3) + disp(i2,i4)*Nx(i4,i3)
 						enddo
 					enddo
 				enddo
-			    call r_getNLStrain(strain,ux,Nx,orient,0,0,dofTable)
+				call r_getNLStrain(strain,ux,Nx,orient,0,0,dofTable)
 				ptTemp = r_0
 				do i2 = 1, numNds
 				    ptTemp = ptTemp + Nvec(i2)*temp(i2)
@@ -2462,53 +2628,18 @@ module AStrO_r_elementEqns
 					do i4 = 1, 6
 					    Ruk(i3) = Ruk(i3) + stress(i4)*strain(i4)
 					enddo
-					do i5 = i3, i2
-					    call r_getNLStrain(strain,ux,Nx,orient,i3,i5,dofTable)
-						strain = (detJ*ipWt(i1))*strain
-						do i4 = 1, 6
-							dRdU(i3,i5) = dRdU(i3,i5) + stress(i4)*strain(i4)
+					if(buildMat .eq. 1 .and. nLGeom .eq. 1) then
+						do i5 = i3, i2
+							call r_getNLStrain(strain,ux,Nx,orient,i3,i5,dofTable)
+							strain = (detJ*ipWt(i1))*strain
+							do i4 = 1, 6
+								dRdU(i3,i5) = dRdU(i3,i5) + stress(i4)*strain(i4)
+							enddo
+							dRdU(i5,i3) = dRdU(i3,i5)
 						enddo
-						dRdU(i5,i3) = dRdU(i3,i5)
-					enddo
+					endif
 				enddo
-			endif
-			if(buildMat .eq. 1) then
-				cdedU(:,:) = r_0
-				if(eType .eq. 41 .or. eType .eq. 3) then
-					i5 = numNds*dofPerNd + numIntDof
-					do i2 = 1, 9
-						do i3 = 1, i5
-							do i4 = 1, 9
-								cdedU(i2,i3) = cdedU(i2,i3) + ABD(i2,i4)*dedU(i4,i3)
-							enddo
-						enddo
-					enddo
-					cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
-					do i2 = 1, i5
-						do i3 = 1, i5
-							do i4 = 1, 9
-								dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
-							enddo
-						enddo
-					enddo
-				elseif(eType .eq. 2) then
-					i5 = numNds*dofPerNd + numIntDof
-					do i2 = 1, 6
-						do i3 = 1, i5
-							do i4 = 1, 6
-								cdedU(i2,i3) = cdedU(i2,i3) + bStiff(i2,i4)*dedU(i4,i3)
-							enddo
-						enddo
-					enddo
-					cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
-					do i2 = 1, i5
-						do i3 = 1, i5
-							do i4 = 1, 6
-								dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
-							enddo
-						enddo
-					enddo
-				else
+				if(buildMat .eq. 1) then
 				    i5 = numNds*dofPerNd + numIntDof
 					do i2 = 1, 6
 						do i3 = 1, i5
@@ -2526,36 +2657,36 @@ module AStrO_r_elementEqns
 						enddo
 					enddo
 				endif
-			endif
+            endif
 		enddo
 		
-		if(eType .eq. 41 .or. eType .eq. 3) then
-            r3Fact = r_0
-			i3 = numNds*dofPerNd
-			do i1 = 1, i3
-			    i2 = dofTable(1,i1)
-				if(i2 .eq. 6) then
-				    r3Fact = r3Fact + r_1*abs(dRdU(i1,i1))
-				endif
-			enddo
-			nnReal = numNds
-			r3Fact = 0.01d0*r3Fact/nnReal
-			do i1 = 1, i3
-			    i2 = dofTable(1,i1)
-				if(i2 .eq. 6) then
-				    do i4 = 1, i3
-					    i5 = dofTable(1,i4)
-						if(i5 .eq. 6) then
-						    if(i1 .eq. i4) then
-							    dRdU(i1,i4) = dRdU(i1,i4) + (numNds-1)*r3Fact
-							else
-							    dRdU(i1,i4) = dRdU(i1,i4) - r3Fact
-							endif
-						endif
-					enddo
-				endif
-			enddo
-		endif
+		! if(eType .eq. 41 .or. eType .eq. 3) then
+            ! r3Fact = r_0
+			! i3 = numNds*dofPerNd
+			! do i1 = 1, i3
+			    ! i2 = dofTable(1,i1)
+				! if(i2 .eq. 6) then
+				    ! r3Fact = r3Fact + r_1*abs(dRdU(i1,i1))
+				! endif
+			! enddo
+			! nnReal = numNds
+			! r3Fact = 0.01d0*r3Fact/nnReal
+			! do i1 = 1, i3
+			    ! i2 = dofTable(1,i1)
+				! if(i2 .eq. 6) then
+				    ! do i4 = 1, i3
+					    ! i5 = dofTable(1,i4)
+						! if(i5 .eq. 6) then
+						    ! if(i1 .eq. i4) then
+							    ! dRdU(i1,i4) = dRdU(i1,i4) + (numNds-1)*r3Fact
+							! else
+							    ! dRdU(i1,i4) = dRdU(i1,i4) - r3Fact
+							! endif
+						! endif
+					! enddo
+				! endif
+			! enddo
+		! endif
 		
 	end subroutine r_getElRuk
 	
@@ -2701,7 +2832,7 @@ module AStrO_r_elementEqns
 		integer :: gt1, gt2
 		
 		call r_getElRuk(Ruk,dRdVar,dRdT,stEn,dSEdT,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
+	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
 		
 		Ru(:) = Ruk(:)
 		if(buildMat .eq. 1) then
@@ -2727,7 +2858,7 @@ module AStrO_r_elementEqns
 			
 			if(gt1 .eq. 1) then
 				call r_getElRuk(Ruc,dRdVar,dRdT,stEn,dSEdT,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,rayCoefK*velNext)
+				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,rayCoefK*velNext,rayCoefK*pVel)
                 Ru(:) = Ru(:) + Ruc
 				if(buildMat .eq. 1) then
 			        dRdU(:,:) = dRdU(:,:) + rayCoefK*(delT*nMGamma)*(c1*c2)*dRdVar(:,:)
