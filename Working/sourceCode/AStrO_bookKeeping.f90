@@ -1042,7 +1042,6 @@ module AStrO_bookKeeping
 		intVecSize = intVecRange(numEls)
 		intMatSize = intMatRange(numEls)
 		
-		
         if(.not. allocated(internalDisp) .and. intVecSize .gt. 0) then
 			allocate(internalDisp(intVecSize))
 			allocate(prevIntDisp(intVecSize))
@@ -1071,7 +1070,6 @@ module AStrO_bookKeeping
 		call buildThermalMPC()
 		
 		call findElementSurfaces()
-		
 		
 		deallocate(ndInserted)
 		deallocate(ndBlockNum)

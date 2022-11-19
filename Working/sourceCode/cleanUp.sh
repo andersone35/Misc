@@ -28,5 +28,5 @@ rm astro_objective.mod
 rm AStrO_commandFunctions.o
 rm astro_commandfunctions.mod
 
-rm AStrO_runJob.exe
+## rm AStrO_runJob.exe
 ## End of script

@@ -322,14 +322,14 @@ module AStrO_commandFunctions
 	
 	subroutine getEldRudUComplex(Ru,dRdU,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 					    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
-					    statInOri,statdrIdrG,statRot,den,sMass,bMass)
+					    statInOri,den,sMass,bMass)
 	    implicit none
 		
 		real*8, intent(out) :: dRdU(33,33)
 		real*8, intent(in) :: Ru(33), intPts(3,8), ipWt(8)
 		real*8, intent(in) :: locNds(3,10), globNds(3,10), orient(3,3), cMat(6,6), tExp(6), ABD(9,9), stExp(6)
 		real*8, intent(in) :: bStiff(6,6), btExp(6), temp(10), disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
-		real*8, intent(in) :: statInOri(3,48), statdrIdrG(3,16), statRot(3), den, sMass(6,6), bMass(6,6)
+		real*8, intent(in) :: statInOri(3,240), den, sMass(6,6), bMass(6,6)
 		integer, intent(in) :: eType, numNds, dofPerNd, numIntDof, numIntPts, dofTable(2,33)
 		
 		complex*16 :: c_dRdU(33,33)
@@ -337,7 +337,7 @@ module AStrO_commandFunctions
 		complex*16 :: c_locNds(3,10), c_globNds(3,10), c_orient(3,3), c_cMat(6,6), c_tExp(6), c_ABD(9,9), c_stExp(6)
 		complex*16 :: c_bStiff(6,6), c_btExp(6), c_temp(10), c_disp(6,11), c_vel(6,11), c_acc(6,11)
 		complex*16 :: c_pDisp(6,11), c_pVel(6,11), c_pAcc(6,11)
-		complex*16 :: c_statInOri(3,48), c_statdrIdrG(3,16), c_statRot(3), c_den, c_sMass(6,6), c_bMass(6,6)
+		complex*16 :: c_statInOri(3,240), c_den, c_sMass(6,6), c_bMass(6,6)
 		
 		integer :: i1, i2, i3, i4, i5
 		
@@ -362,8 +362,6 @@ module AStrO_commandFunctions
 		c_pVel = c_1*pVel 
 		c_pAcc = c_1*pAcc
 		c_statInOri = c_1*statInOri
-		c_statdrIdrG = c_1*statdrIdrG
-		c_statRot = c_1*statRot
 		c_den = c_1*den
 		c_sMass = c_1*sMass
 		c_bMass = c_1*bMass
@@ -376,7 +374,7 @@ module AStrO_commandFunctions
 			call c_getElRu(c_Ru,c_dRdU,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,c_intPts,c_ipWt, &
 				    c_locNds,c_globNds,c_orient,c_cMat,c_tExp,c_ABD,c_stExp,c_bStiff,c_btExp,c_temp,c_disp, &
 					c_vel,c_acc,c_pDisp,c_pVel,c_pAcc, &
-				    c_statInOri,c_statdrIdrG,c_statRot,c_den,c_sMass,c_bMass)
+				    c_statInOri,c_den,c_sMass,c_bMass)
 			do i5 = 1, i1
 			    dRdU(i5,i2) = compStepInv*imag(c_Ru(i5))
 			enddo
@@ -396,11 +394,12 @@ module AStrO_commandFunctions
 		real*8 :: stCond(3,3), ssHeat, btCond(3,3), bsHeat
 		real*8 :: bStiff(6,6), btExp(6), temp(10), disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
 		real*8 :: Tdot(10), pTemp(10), pTdot(10)
-		real*8 :: statInOri(3,48), statdrIdrG(3,16), statRot(3), den, sMass(6,6), bMass(6,6)
+		real*8 :: statInOri(3,240), den, sMass(6,6), bMass(6,6)
 		real*8 :: nnInv
 		real*8 :: resVec(33), bVec(33), zVec(33)
 		integer :: eType, numNds, dofPerNd, numIntDof, numIntPts, dofTable(2,33)
 		integer :: i1, i2, i3, i4, i5, i6, kGi, kGj, inserted
+		real*8 :: dRdUCopy(33,33)
 		
 		if(buildMat .eq. 1) then
 		    elasticMat(:) = r_0
@@ -437,28 +436,28 @@ module AStrO_commandFunctions
 				! open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 			! endif
 			!! ----------------------------
+			call r_getInstOrient(statInOri,orient,disp,numNds,1)
 			eType = elementType(i1)
-			i3 = numNds*dofPerNd
-			! if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
-			    ! if(buildMat .eq. 1) then
-				    ! call r_getElRu(Ru,dRdU,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
+		    call r_getElRu(Ru,dRdU,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
+				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
+				statInOri,den,sMass,bMass)
+			! if(buildMat .eq. 1) then
+			    ! call getEldRudUComplex(Ru,dRdU,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 					    ! locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
 					    ! statInOri,statdrIdrG,statRot,den,sMass,bMass)
-					! call getEldRudUComplex(Ru,dRdU,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-					    ! locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
-					    ! statInOri,statdrIdrG,statRot,den,sMass,bMass)
-				! else
-				    ! call r_getElRu(Ru,dRdU,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-					    ! locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
-					    ! statInOri,statdrIdrG,statRot,den,sMass,bMass)
+				! if(i1 .eq. 5) then
+					! do i2 = 1, 28
+						! do i3 = 1, 28
+							! if(abs(dRdU(i2,i3) - dRdUCopy(i2,i3)) .gt. 1e-3) then
+								! write(lfUnit,*) 'discrepancy: ', i2, i3, dRdU(i2,i3), dRdUCopy(i2,i3)
+							! endif
+						! enddo
+					! enddo
 				! endif
-			! else
-				call r_getElRu(Ru,dRdU,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-					locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
-					statInOri,statdrIdrG,statRot,den,sMass,bMass)
 			! endif
 			! write(lfUnit,*) 'Element ', i1, 'Ru:'
 			! write(lfUnit,*) Ru(1:24)
+			i3 = numNds*dofPerNd
 			do i2 = 1, i3
 			    i4 = dofTable(1,i2)
 				i5 = elementList(dofTable(2,i2),i1)
@@ -474,51 +473,15 @@ module AStrO_commandFunctions
 			endif
 			if(buildMat .eq. 1) then
 			    ! -------------------
-			    if(i1 .eq. 1) then
+			    ! if(i1 .eq. 1) then
 					! write(lfUnit,*) 'first element elastic matrix:'
 					! i3 = numNds*dofPerNd + numIntDof
 					! do i2 = 1, i3
 						! write(lfUnit,*) dRdU(1:i3,i2)
 					! enddo
-					! dRdU(1,1) = 10000d0*dRdU(1,1)
-					! dRdU(4,4) = 10000d0*dRdU(4,4)
-					! dRdU(5,5) = 10000d0*dRdU(5,5)
-					! dRdU(8,8) = 10000d0*dRdU(8,8)
-					! dRdU(9,9) = 10000d0*dRdU(9,9)
-					! dRdU(12,12) = 10000d0*dRdU(12,12)
-					! dRdU(13,13) = 10000d0*dRdU(13,13)
-					! dRdU(16,16) = 10000d0*dRdU(16,16)
-					! dRdU(17,17) = 10000d0*dRdU(17,17)
-					! dRdU(20,20) = 10000d0*dRdU(20,20)
-					! dRdU(21,21) = 10000d0*dRdU(21,21)
-					! dRdU(24,24) = 10000d0*dRdU(24,24)
-					! bVec(:) = r_0
-					! bVec(18) = -r_1
-					! bVec(19) = -r_1
-					! resVec(:) = r_0
-					! call rFactorMat(dRdU(1:32,1:32),32,32,1,32,1,32,0)
-					! call solveRFactor(resVec(1:32),dRdU(1:32,1:32),bVec(1:32),32,32,1,32,1,32,0)
-					! bVec(:) = r_0
-					! bVec(10) = 0.012d0
-					! bVec(11) = 0.012d0
-					! bVec(18) = -0.024d0
-					! bVec(19) = -0.024d0
-					! bVec(29) = -0.006d0
-					! bVec(31) = -0.006d0
-					! resVec(:) = r_0
-					! do i2 = 1, 32
-					    ! do i3 = 1, 32
-						    ! resVec(i2) = resVec(i2) + dRdU(i2,i3)*bVec(i3)
-						! enddo
-					! enddo
-					! write(lfUnit,*) 'single el result:'
-					! do i2 = 1, numNds
-					    ! write(lfUnit,*) resVec(i2), resVec(i2+4), resVec(i2+8), resVec(i2+12), resVec(i2+16), resVec(i2+20)
-					! enddo
-					! write(lfUnit,*) resVec(25), resVec(26)
-					! write(lfUnit,*) resVec(27), resVec(28)
-					! write(lfUnit,*) resVec(29:32)
-				endif
+					! close(lfUnit)
+					! open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
+				! endif
 				! ---------------------
 				if(numIntDof .gt. 0) then
 					i2 = numNds*dofPerNd + 1
@@ -827,7 +790,7 @@ module AStrO_commandFunctions
 		
 		integer :: eType
 		real*8 :: Rum(33), dRdA(33,33)
-		real*8 :: statRot(3), statInOri(3,48), statdrIdrG(3,16)
+		real*8 :: statInOri(3,240)
 		real*8 :: nnInv
 		integer :: i1, i2, i3, i4, i5, i6
 
@@ -843,22 +806,7 @@ module AStrO_commandFunctions
 				bStiff, bMass, bTELd, btCond, bsHeat, &
 				temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
 			eType = elementType(i1)
-			statRot(:) = r_0
-			do i2 = 1, numNds
-			    statRot(:) = statRot(:) + disp(4:6,i2)
-			enddo
-			nnInv = numNds
-			statRot(:) = (r_1/nnInv)*statRot(:)
-			call r_getInstOrient(statInOri,orient,statRot)
-			statRot(:) = r_0
-			do i2 = 1, numNds
-			    statRot(:) = statRot(:) + pDisp(4:6,i2)
-			enddo
-			nnInv = numNds
-			statRot(:) = (r_1/nnInv)*statRot(:)
-			call r_getdrIdrG(statdrIdrG,orient,statRot)
-			statInOri(:,4:48) = r_0
-			statdrIdrG(:,4:16) = r_0
+			call r_getInstOrient(statInOri,orient,disp,numNds,1)
 			acc(:,:) = r_0
 			i3 = numNds*dofPerNd
 			do i2 = 1, i3
@@ -867,7 +815,7 @@ module AStrO_commandFunctions
 				acc(i4,i5) = r_1
 			enddo
 		    call r_getElRum(Rum,dRdA,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
-	            locNds, globNds, orient, statInOri, statdrIdrG, statRot, den, sMass, bMass, disp, acc)
+	            locNds, globNds, orient, statInOri, den, sMass, bMass, disp, acc)
 			do i2 = 1, i3
 			    i4 = dofTable(1,i2)
 				i5 = elementList(dofTable(2,i2),i1)
@@ -1188,6 +1136,7 @@ module AStrO_commandFunctions
 			endif
 			nodeTemp(:) = nodeTemp(:) + delDisp(1:numNodes)		
 		endif
+	
 	    if(solveElastic .eq. 1) then
 			if(nLGeom .eq. 0) then
 				maxNLIt = 1
@@ -1201,6 +1150,7 @@ module AStrO_commandFunctions
 			    elasticLoad(:) = r_0
 				if(intVecSize .gt. 0) then
 				    intElasticLoad(:) = r_0
+					! internalDisp(:) = r_0
 				endif
 				call getElasticAppliedLoad(time)
 				elasticLoad(:) = appLdFact*elasticLoad(:)
@@ -1214,10 +1164,6 @@ module AStrO_commandFunctions
 				if(intVecSize .gt. 0) then
 				    call updateExternalRHS(elasticLoad,elMatDim,intElasticLoad,intVecSize)
 				endif
-				! write(lfUnit,*) 'elasticLoad:'
-				! do i2 = 1, elMatDim
-				    ! write(lfUnit,*) elasticLoad(i2)
-				! enddo
 				write(lfUnit,*) 'calling solver, elastic solution'
 				if(solverMeth .eq. 'direct') then
 				    call solveSparseLDLFact(delDisp, elasticLoad, elMatLT, elMatLTSize, elMatLTRange, elMatDim, swapVec)
@@ -1256,6 +1202,7 @@ module AStrO_commandFunctions
 		endif
 		
 		write(lfUnit,*) 'finished analysisPrep'
+		
 		call loadInitialState()
 		
 		if(solveThermal .eq. 1) then
@@ -1266,11 +1213,8 @@ module AStrO_commandFunctions
 			call getSparseLDLFact(thermMatLT,thermMatLTSize,thermMatLTRange,thermMatDim)
 		endif
 		
-		write(*,*) 'solve: initialize elastic'
 		if(solveElastic .eq. 1) then
-		    write(*,*) 'getting elasticSolnLoad'
 		    call getElasticSolnLoad(1)
-			write(*,*) 'finished'
 			call scaleElasticMPC()
 			if(nLGeom .eq. 0) then
 			    !! --------------------------
@@ -1308,7 +1252,6 @@ module AStrO_commandFunctions
 			else
 			    do i1 = 1, ldRampSteps
 				    appLdFact = -r_1*i1*(i1-2*ldRampSteps)/(ldRampSteps*ldRampSteps)
-					write(*,*) 'appLdFact', appLdFact
 					call stepSolve(loadTime,appLdFact)
 					if(intVecSize .gt. 0) then
 						prevIntDisp(:) = internalDisp(:)
@@ -1545,7 +1488,7 @@ module AStrO_commandFunctions
 						temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
 					eType = elementType(i1)
 					call r_getElRuk(Ruk,dRdU,dRdT,stEn,dSEdT,1,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable, &
-	                    intPts,ipWt,locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
+	                    intPts,ipWt,locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
 					i2 = numNds*dofPerNd
 					do i3 = 1, i2
 					    i4 = dofTable(1,i3)
@@ -1769,7 +1712,7 @@ module AStrO_commandFunctions
 		character(len=16) :: lt
 		
 		complex*16 :: Ru(33), dRdU(33,33), ndLd(7)
-		complex*16 :: statRot(3), nnInv, statInOri(3,48), statdrIdrG(3,16)
+		complex*16 :: statRot(3), nnInv, statInOri(3,240), statdrIdrG(3,16)
 		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10
 		
 	    dRudD(:) = r_0
@@ -1796,25 +1739,10 @@ module AStrO_commandFunctions
 				bStiff, bMass, btExp, btCond, bsHeat, &
 	            temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i2)
 			eType = elementType(i2)
-			statRot(:) = c_0
-			do i2 = 1, numNds
-			    statRot(:) = statRot(:) + disp(4:6,i2)
-			enddo
-			nnInv = c_1*numNds
-			statRot(:) = (c_1/nnInv)*statRot(:)
-			call c_getInstOrient(statInOri,orient,statRot)
-			statRot(:) = c_0
-			do i2 = 1, numNds
-			    statRot(:) = statRot(:) + pDisp(4:6,i2)
-			enddo
-			nnInv = c_1*numNds
-			statRot(:) = (c_1/nnInv)*statRot(:)
-			call c_getdrIdrG(statdrIdrG,orient,statRot)
-			statInOri(:,4:48) = c_0
-			statdrIdrG(:,4:16) = c_0
+			call c_getInstOrient(statInOri,orient,disp,numNds,1)
 			call c_getElRu(Ru,dRdU,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
-				statInOri,statdrIdrG,statRot,den,sMass,bMass)
+				statInOri,den,sMass,bMass)
 			i3 = numNds*dofPerNd
 			do i4 = 1, i3
 			    i5 = dofTable(1,i4)

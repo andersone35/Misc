@@ -21,7 +21,7 @@ gfortran -static -c AStrO_commandFunctions.f90
 
 gfortran -static AStrO_runJob.f90 AStrO_constantVals.o AStrO_globalData.o AStrO_input.o AStrO_r_overloadFunctions.o AStrO_c_overloadFunctions.o AStrO_solvers.o AStrO_r_designPropertyFunctions.o AStrO_r_elementEqns.o AStrO_c_designPropertyFunctions.o AStrO_c_elementEqns.o AStrO_output.o AStrO_bookKeeping.o AStrO_objective.o AStrO_commandFunctions.o -o $_wkDir/bin/AStrO_runJob.exe
 
-gfortran -static testSectionEls.f90 AStrO_constantVals.o AStrO_globalData.o AStrO_input.o AStrO_r_overloadFunctions.o AStrO_c_overloadFunctions.o AStrO_solvers.o AStrO_r_designPropertyFunctions.o AStrO_r_elementEqns.o AStrO_c_designPropertyFunctions.o AStrO_c_elementEqns.o AStrO_output.o AStrO_bookKeeping.o AStrO_objective.o AStrO_commandFunctions.o -o $_wkDir/bin/testSectionEls.exe
+## gfortran -static testSectionEls.f90 AStrO_constantVals.o AStrO_globalData.o AStrO_input.o AStrO_r_overloadFunctions.o AStrO_c_overloadFunctions.o AStrO_solvers.o AStrO_r_designPropertyFunctions.o AStrO_r_elementEqns.o AStrO_c_designPropertyFunctions.o AStrO_c_elementEqns.o AStrO_output.o AStrO_bookKeeping.o AStrO_objective.o AStrO_commandFunctions.o -o $_wkDir/bin/testSectionEls.exe
 
 ./cleanUp.sh
 

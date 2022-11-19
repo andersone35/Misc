@@ -399,22 +399,24 @@
  		elseif(eType .eq. 41) then
  		    numNds = 4
  			dofPerNd = 6
- 			numIntDof = 0
+ 			numIntDof = 8
  			numIntPts = 4
  			intPts(:,1) = c_1rt3*(/-c_1,-c_1,c_0/)
  			intPts(:,2) = c_1rt3*(/c_1,-c_1,c_0/)
  			intPts(:,3) = c_1rt3*(/-c_1,c_1,c_0/)
  			intPts(:,4) = c_1rt3*(/c_1,c_1,c_0/)
- 			! dofTable(:,25) = (/1,5/)
- 			! dofTable(:,26) = (/1,6/)
- 			! dofTable(:,27) = (/2,5/)
- 			! dofTable(:,28) = (/2,6/)
- 			! dofTable(:,29) = (/3,5/)
- 			! dofTable(:,30) = (/3,6/)
- 			! dofTable(:,29) = (/3,7/)
- 			! dofTable(:,30) = (/3,8/)
- 			! dofTable(:,31) = (/3,9/)
- 			! dofTable(:,32) = (/3,10/)
+ 			!dofTable(:,25) = (/3,7/)
+ 			!dofTable(:,26) = (/3,8/)
+ 			!dofTable(:,27) = (/3,9/)
+ 			!dofTable(:,28) = (/3,10/)
+ 			dofTable(:,25) = (/1,5/)
+ 			dofTable(:,26) = (/1,6/)
+ 			dofTable(:,27) = (/2,5/)
+ 			dofTable(:,28) = (/2,6/)
+ 			dofTable(:,29) = (/3,7/)
+ 			dofTable(:,30) = (/3,8/)
+ 			dofTable(:,31) = (/3,9/)
+ 			dofTable(:,32) = (/3,10/)
  			ipWt(1:4) = c_1
  		elseif(eType .eq. 3) then
  		    numNds = 3
@@ -491,7 +493,6 @@
  			call c_getShellExpLoad(sTELd,elNum)
  			call c_getShellThermCond(stCond,elNum)
  			call c_getShellSpecHeat(ssHeat,elNum)
- 			call c_adjustABD(ABD,locNds,elNum)
          else	
  			call c_getMaterialStiffness(cMat,elNum)
  			call c_getMaterialDensity(den,elNum)
@@ -499,6 +500,7 @@
  			call c_getMaterialThermCond(tCond,elNum)
  			call c_getMaterialSpecHeat(sHeat,elNum)
  		endif
+ 		
  		
  	end subroutine c_getElementProperties
  	
@@ -531,14 +533,12 @@
  			Tdot(i1) = c_1*nodeTdot(i3)
  			do i2 = 1, dofPerNd
  			    i4 = nDofIndex(i2,elementList(i1,elNum))
- 				if(i4 .ne. 0) then
- 					pDisp(i2,i1) = c_1*prevDisp(i4)
- 					pAcc(i2,i1) = c_1*prevAcc(i4)
- 					pVel(i2,i1) = c_1*prevVel(i4)
- 					disp(i2,i1) = c_1*nodeDisp(i4)
- 					vel(i2,i1) = c_1*nodeAcc(i4)
- 					acc(i2,i1) = c_1*nodeVel(i4)
- 				endif
+ 				pDisp(i2,i1) = c_1*prevDisp(i4)
+ 				pAcc(i2,i1) = c_1*prevAcc(i4)
+ 				pVel(i2,i1) = c_1*prevVel(i4)
+ 				disp(i2,i1) = c_1*nodeDisp(i4)
+ 				vel(i2,i1) = c_1*nodeAcc(i4)
+ 				acc(i2,i1) = c_1*nodeVel(i4)
  			enddo
  		enddo
  		
@@ -549,69 +549,12 @@
  			    i4 = i2 + i3
  				i5 = dofTable(1,i4)
  				i6 = dofTable(2,i4)
- 				disp(i5,i6) = c_1*internalDisp(i1+i3)
- 				pDisp(i5,i6) = c_1*prevIntDisp(i1+i3)
+ 				disp(i5,i6) = internalDisp(i1+i3)
+ 				pDisp(i5,i6) = prevIntDisp(i1+i3)
  			enddo
  		endif
  		
  	end subroutine c_getElementSolution
- 	
- 	subroutine c_adjustABD(ABD,locNds,elNum)
- 	    implicit none
- 		
- 		integer, intent(in) :: elNum
- 		complex*16, intent(in) :: locNds(3,10)
- 		complex*16, intent(out) :: ABD(9,9)
- 		
- 		complex*16 :: dxds(3,3), dsdx(3,3), Ns(11,3), thickness, zOff, aspRat
- 		complex*16 :: sXvec(3), sYvec(3), xLen, yLen
- 		complex*16 :: spt(3), det, dp, mag
- 		integer :: i1, i2, i3, eType
- 
-         eType = elementType(elNum)		
- 		spt(:) = c_0
- 		call c_EvalNs(Ns, sPt, eType)
- 		dxds(:,:) = c_0
- 		do i1 = 1, 3
- 		    do i2 = 1, 3
- 			    do i3 = 1, 4
- 				    dxds(i1,i2) = dxds(i1,i2) + locNds(i1,i3)*Ns(i3,i2)
- 				enddo
- 			enddo
- 		enddo
- 		dxds(3,3) = c_1
- 		
- 		call c_getDetInv(det,dsdx,dxds)
- 		
- 		sXvec(:) = dsdx(:,1)
- 		dp = sXvec(1)*sXvec(1) + sXvec(2)*sXvec(2)
- 		call c_sqrt(mag,dp)
- 		if(eType .eq. 41) then
- 		    sXvec(:) = (c_2/mag)*sXvec(:)
- 		else
- 		    sXvec(:) = (c_1/mag)*sXvec(:)
- 		endif
- 		xLen = dxds(1,1)*sXvec(1) + dxds(1,2)*sXvec(2)
- 		
- 		sYvec(:) = dsdx(:,2)
- 		dp = sYvec(1)*sYvec(1) + sYvec(2)*sYvec(2)
- 		call c_sqrt(mag,dp)
- 		if(eType .eq. 41) then
- 		    sYvec(:) = (c_2/mag)*sYvec(:)
- 		else
- 		    sYvec(:) = (c_1/mag)*sYvec(:)
- 		endif
- 		yLen = dxds(2,1)*sYvec(1) + dxds(2,2)*sYvec(2)
- 		
- 		call c_getElThickOffset(thickness,zOff,elNum)
- 		
- 		aspRat = thickness/xLen
- 		ABD(7,7) = 0.05d0*ABD(1,1)*aspRat*aspRat*ABD(7,7)/ABD(3,3)
- 		
- 		aspRat = thickness/yLen
- 		ABD(8,8) = 0.05d0*ABD(2,2)*aspRat*aspRat*ABD(8,8)/ABD(3,3)
- 	
- 	end subroutine c_adjustABD
  	
  	subroutine c_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
  	    locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, &
@@ -742,183 +685,21 @@
          return
      end subroutine c_getNLStrain
  	
- 	subroutine c_getShellDef(def,ux,rx,Nvec,Nx,orient,instOri,dv,dv2,dofTable)
+ 	subroutine c_getShellDef(def,ux,rot,rx)
  	    implicit none
  		
- 		integer, intent(in) :: dv, dv2, dofTable(2,33)
  		complex*16, intent(out) :: def(9)
- 		complex*16, intent(in) :: ux(3,3), rx(3,3), Nvec(11), Nx(11,3), orient(3,3), instOri(3,48)
+ 		complex*16, intent(in) :: ux(3,3), rot(3), rx(3,3)
  		
- 		complex*16 :: uxL(3,3), rxL(3,3), del1(3), del2(3)
- 		integer :: i1, i2, i3, nd, var, nd2, var2, stCol1, stCol2, stCol3, stCol12, stCol13, stCol23
- 		
- 		if((dv + dv2) .eq. 0) then
- 		    uxL(:,:) = c_0
- 		    do i1 = 1, 3
- 			    do i2 = 1, 3
- 				    do i3 = 1, 3
- 					    uxL(i1,i2) = uxL(i1,i2) + orient(i1,i3)*ux(i3,i2)
- 					enddo
- 				enddo
- 			enddo
- 			def(1) = uxL(1,1) + c_p5*(ux(1,1)*ux(1,1) + ux(2,1)*ux(2,1) + ux(3,1)*ux(3,1))
- 			def(2) = uxL(2,2) + c_p5*(ux(1,2)*ux(1,2) + ux(2,2)*ux(2,2) + ux(3,2)*ux(3,2))
- 			def(3) = uxL(1,2) + uxL(2,1) + ux(1,1)*ux(1,2) + ux(2,1)*ux(2,2) + ux(3,1)*ux(3,2)
- 			
- 			rxL(:,:) = c_0			
- 			do i1 = 1, 3
- 			    stCol1 = 3*i1
- 			    do i2 = 1, 3
- 				    do i3 = 1, 3
- 					    rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol1+i3)*rx(i1,i2)
- 						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol1+i3)*rx(i1,i2)
- 					enddo
- 				enddo
- 			enddo
- 			def(4) = rxL(2,1)
- 			def(5) = -rxL(1,2)
- 			def(6) = rxL(2,2) - rxL(1,1)
- 			
- 			del1(:) = (/c_1,c_0,c_0/)
- 			del2(:) = (/c_0,c_1,c_0/)
- 			def(7:9) = c_0
- 			do i1 = 1, 3
- 			    def(7) = def(7) + (del1(i1) + ux(i1,1))*instOri(3,i1)
- 				def(8) = def(8) + (del2(i1) + ux(i1,2))*instOri(3,i1)
- 				def(9) = def(9) + (del1(i1) + ux(i1,1))*instOri(2,i1) - (del2(i1) + ux(i1,2))*instOri(1,i1)
- 			enddo
- 		elseif(dv*dv2 .eq. 0) then
- 		    if(dv .ne. 0) then
- 			    var = dofTable(1,dv)
- 			    nd = dofTable(2,dv)
- 			else
- 			    var = dofTable(1,dv2)
- 				nd = dofTable(2,dv2)
- 			endif
- 			if(var .le. 3) then
- 				def(1) = orient(1,var)*Nx(nd,1) + Nx(nd,1)*ux(var,1)
- 				def(2) = orient(2,var)*Nx(nd,2) + Nx(nd,2)*ux(var,2)
- 				def(3) = orient(1,var)*Nx(nd,2) + orient(2,var)*Nx(nd,1) + Nx(nd,1)*ux(var,2) + Nx(nd,2)*ux(var,1)
- 				
- 				def(4:6) = c_0
- 				
- 				def(7) = Nx(nd,1)*instOri(3,var)
- 				def(8) = Nx(nd,2)*instOri(3,var)
- 				def(9) = Nx(nd,1)*instOri(2,var) - Nx(nd,2)*instOri(1,var)
- 			else
- 			    def(1:3) = c_0
- 				
- 				rxL(:,:) = c_0
- 				stCol2 = 3*(var-3)
- 				do i1 = 1, 3
- 					stCol1 = 3*i1
- 					stCol12 = 12*(var-3)
- 					do i2 = 1, 3
- 						do i3 = 1, 3
- 							rxL(1,i2) = rxL(1,i2) + instOri(3,stCol2+i3)*Nvec(nd)*instOri(2,stCol1+i3)*rx(i1,i2)
- 							rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol12+i3)*Nvec(nd)*rx(i1,i2)
- 							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol2+i3)*Nvec(nd)*instOri(3,stCol1+i3)*rx(i1,i2)
- 							rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol12+i3)*Nvec(nd)*rx(i1,i2)
- 						enddo
- 					enddo
- 				enddo
- 				
- 				do i2 = 1, 3
- 				    do i3 = 1, 3
- 					    rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol2+i3)*Nx(nd,i2)
- 						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol2+i3)*Nx(nd,i2)
- 					enddo
- 				enddo
- 				
- 				def(4) = rxL(2,1)
- 			    def(5) = -rxL(1,2)
- 			    def(6) = rxL(2,2) - rxL(1,1)
- 				
- 				def(7:9) = c_0
- 				do i1 = 1, 3
- 					def(7) = def(7) + (del1(i1) + ux(i1,1))*instOri(3,stCol2+i1)*Nvec(nd)
- 					def(8) = def(8) + (del2(i1) + ux(i1,2))*instOri(3,stCol2+i1)*Nvec(nd)
- 					def(9) = def(9) + (del1(i1) + ux(i1,1))*instOri(2,stCol2+i1)*Nvec(nd)
-                  	def(9) = def(9) - (del2(i1) + ux(i1,2))*instOri(1,stCol2+i1)*Nvec(nd)
- 				enddo
- 			endif
- 		else
- 		    if(dofTable(1,dv) .lt. dofTable(1,dv2)) then
- 		        var = dofTable(1,dv)
- 			    nd = dofTable(2,dv)
- 			    var2 = dofTable(1,dv2)
- 			    nd2 = dofTable(2,dv2)
- 			else
- 			    var = dofTable(1,dv2)
- 			    nd = dofTable(2,dv2)
- 			    var2 = dofTable(1,dv)
- 			    nd2 = dofTable(2,dv)
- 			endif
- 			if(var .le. 3 .and. var2 .le. 3) then
- 			    def(:) = c_0
- 			    if(var .eq. var2) then
- 					def(1) = Nx(nd,1)*Nx(nd2,1)
- 					def(2) = Nx(nd,2)*Nx(nd2,2)
- 					def(3) = Nx(nd,1)*Nx(nd2,2) + Nx(nd2,1)*Nx(nd,2)
- 				endif
- 			elseif(var .gt. 3 .and. var2 .gt. 3) then
- 			    def(1:3) = c_0
- 				stCol2 = 3*(var-3)
- 				stCol3 = 3*(var2-3)
- 				stCol23 = 12*(var-3) + 3*(var2-3)
- 				rxL(:,:) = c_0
- 				do i1 = 1, 3
- 				    stCol1 = 3*i1
- 					stCol12 = 12*i1 + 3*(var-3)
- 					stCol13 = 12*i1 + 3*(var2-3)
- 					do i2 = 1, 3
- 					    do i3 = 1, 3
- 						    rxL(1,i2) = rxL(1,i2) + instOri(3,stCol23+i3)*Nvec(nd2)*Nvec(nd)*instOri(2,stCol1+i3)*rx(i1,i2)
- 							rxL(1,i2) = rxL(1,i2) + instOri(3,stCol2+i3)*Nvec(nd)*instOri(2,stCol13+i3)*Nvec(nd2)*rx(i1,i2)
- 							rxL(1,i2) = rxL(1,i2) + instOri(3,stCol3+i3)*Nvec(nd2)*instOri(2,stCol12+i3)*Nvec(nd2)*rx(i1,i2)
- 							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol23+i3)*Nvec(nd2)*Nvec(nd)*instOri(3,stCol1+i3)*rx(i1,i2)
- 							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol2+i3)*Nvec(nd)*instOri(3,stCol13+i3)*Nvec(nd2)*rx(i1,i2)
- 							rxL(2,i2) = rxL(2,i2) + instOri(1,stCol3+i3)*Nvec(nd2)*instOri(3,stCol12+i3)*Nvec(nd2)*rx(i1,i2)
- 						enddo
- 					enddo
- 				enddo
- 
- 				stCol1 = 3*(var-3)
- 				stCol2 = 3*(var2-3)
- 				stCol12 = 12*(var-3) + 3*(var2-3)
- 				do i2 = 1, 3
- 					do i3 = 1, 3
- 						rxL(1,i2) = rxL(1,i2) + instOri(3,stCol1+i3)*Nvec(nd)*instOri(2,stCol2+i3)*Nx(nd2,i2)
- 						rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol12+i3)*Nvec(nd)*Nx(nd2,i2)
- 						rxL(1,i2) = rxL(1,i2) + instOri(3,stCol2+i3)*Nvec(nd2)*instOri(2,stCol1+i3)*Nx(nd,i2)
- 						rxL(1,i2) = rxL(1,i2) + instOri(3,i3)*instOri(2,stCol12+i3)*Nvec(nd2)*Nx(nd,i2)
- 						rxL(2,i2) = rxL(2,i2) + instOri(1,stCol1+i3)*Nvec(nd)*instOri(3,stCol2+i3)*Nx(nd2,i2)
- 						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol12+i3)*Nvec(nd)*Nx(nd2,i2)
- 						rxL(2,i2) = rxL(2,i2) + instOri(1,stCol2+i3)*Nvec(nd2)*instOri(3,stCol1+i3)*Nx(nd,i2)
- 						rxL(2,i2) = rxL(2,i2) + instOri(1,i3)*instOri(3,stCol12+i3)*Nvec(nd2)*Nx(nd,i2)
- 					enddo
- 				enddo
- 				
- 				def(4) = rxL(2,1)
- 			    def(5) = -rxL(1,2)
- 			    def(6) = rxL(2,2) - rxL(1,1)
- 				
- 				stCol12 = 12*(var-3) + 3*(var2-3)
- 				def(7:9) = c_0
- 				do i1 = 1, 3
- 					def(7) = def(7) + (del1(i1) + ux(i1,1))*instOri(3,stCol12+i1)*Nvec(nd)*Nvec(nd2)
- 					def(8) = def(8) + (del2(i1) + ux(i1,2))*instOri(3,stCol12+i1)*Nvec(nd)*Nvec(nd2)
- 					def(9) = def(9) + (del1(i1) + ux(i1,1))*instOri(2,stCol12+i1)*Nvec(nd)*Nvec(nd2)
- 					def(9) = def(9) - (del2(i1) + ux(i1,2))*instOri(1,stCol12+i1)*Nvec(nd)*Nvec(nd2)
- 				enddo
- 			else
- 			    def(:) = c_0
- 				stCol1 = 3*(var2-3)
- 				def(7) = Nx(nd,1)*instOri(3,stCol1+var)*Nvec(nd2)
- 				def(8) = Nx(nd,2)*instOri(3,stCol1+var)*Nvec(nd2)
- 				def(9) = Nx(nd,1)*instOri(2,stCol1+var)*Nvec(nd2) - Nx(nd,2)*instOri(1,stCol1+var)*Nvec(nd2)
- 			endif
- 		endif
+ 		def(1) = ux(1,1)
+ 		def(2) = ux(2,2)
+ 		def(3) = ux(1,2) + ux(2,1)
+ 		def(4) = rx(2,1)
+ 		def(5) = -rx(1,2)
+ 		def(6) = rx(2,2) - rx(1,1)
+ 		def(7) = ux(3,1) + rot(2)
+ 		def(8) = ux(3,2) - rot(1)
+ 		def(9) = c_2*rot(3) - ux(2,1) + ux(1,2)
  		
  	end subroutine c_getShellDef
  	
@@ -929,82 +710,82 @@
  		complex*16, intent(in) :: ux(3,3), rot(3), rx(3,3)
  		
  		def(1) = ux(1,1)
- 		def(2) = ux(2,1) - rot(3)
- 		def(3) = ux(3,1) + rot(2)
+ 		def(2) = ux(2,1)
+ 		def(3) = ux(3,1)
  		def(4) = rx(1,1)
  		def(5) = rx(2,1)
  		def(6) = rx(3,1)
  		
  	end subroutine c_getBeamDef
  	
- 	subroutine c_getInstOrient(instOri,locOri,rot)
+ 	subroutine c_getInstOrient(instOri,locOri,disp,numNds,static)
  	    implicit none
+ 
+         integer, intent(in) :: numNds, static
+ 		complex*16, intent(in) :: locOri(3,3), disp(6,11)
+ 		complex*16, intent(out) :: instOri(3,240)
  		
- 		complex*16, intent(out) :: instOri(3,48)
- 		complex*16, intent(in) :: locOri(3,3), rot(3)
+ 		complex*16 :: prod(3,3), tempAl(3,3), tempAl2(3,3), elRot(3)
  		
- 		complex*16 :: tempAl(3,3)
+ 		integer :: i1, i2, i3, i4, i5, stCol
  		
- 		integer :: i1, i2, i3, i4, i5, st1, st2, st12
+ 		instOri(:,:) = c_0
  		
- 		call c_rotateAlpha(instOri(:,1:3),locOri,rot,0,0)
- 		do i1 = 1, 3
- 		    call c_rotateAlpha(tempAl,locOri,rot,i1,0)
- 			st1 = 12*i1                    !! First column = 12*i1 + 3*i2
- 			instOri(:,st1+1:st1+3) = tempAl
- 			st1 = 3*i1
- 			instOri(:,st1+1:st1+3) = tempAl
- 			do i2 = i1, 3
- 			    call c_rotateAlpha(tempAl,locOri,rot,i1,i2)
- 				st12 = 12*i1 + 3*i2                    !! First column = 12*i1 + 3*i2
- 				instOri(:,st12+1:st12+3) = tempAl
- 				st12 = 12*i2 + 3*i1
- 				instOri(:,st12+1:st12+3) = tempAl
+ 		elRot(:) = c_0
+ 		do i1 = 1, numNds
+ 		    elRot(:) = elRot(:) + disp(4:6,i1)
+ 		enddo
+ 		elRot(:) = (c_1/numNds)*elRot(:)
+ 		
+ 		call c_rotateAlpha(instOri(:,1:3),locOri,elRot,0,0)
+ 		if(static .eq. 0) then
+ 			do i1 = 1, 3
+ 				call c_rotateAlpha(tempAl,locOri,elRot,i1,0)
+ 				stCol = 12*i1
+ 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 				stCol = 3*i1
+ 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 				do i2 = i1, 3
+ 					call c_rotateAlpha(tempAl,locOri,elRot,i1,i2)
+ 					stCol = 12*i1 + 3*i2
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					stCol = 3*i1 + 12*i2
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 				enddo
+ 			enddo
+ 		endif
+ 		
+ 		do i3 = 1, numNds
+ 		    stCol = 48*i3
+ 			call c_rotateAlpha(instOri(:,stCol+1:stCol+3),locOri,disp(4:6,i3),0,0)
+ 			do i1 = 1, 3
+ 				call c_rotateAlpha(tempAl,locOri,disp(4:6,i3),i1,0)
+ 				stCol = 48*i3 + 12*i1
+ 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 				stCol = 48*i3 + 3*i1
+ 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 				do i2 = i1, 3
+ 					call c_rotateAlpha(tempAl,locOri,disp(4:6,i3),i1,i2)
+ 					stCol = 48*i3 + 12*i1 + 3*i2
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					stCol = 48*i3 + 3*i1 + 12*i2
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 				enddo
  			enddo
  		enddo
  		
  	end subroutine c_getInstOrient
  	
- 	subroutine c_getdrIdrG(drIdrG,locOri,rot)
- 	    implicit none
- 		
- 		complex*16, intent(out) :: drIdrG(3,16)
- 		complex*16, intent(in) :: locOri(3,3), rot(3)
- 		
- 		complex*16 :: prod(3,3), instOri(3,3), dInstOri(3,3)
- 		
- 		integer :: i1, i2, i3, i4, i5
- 		
- 		drIdrG(:,:) = c_0
- 		
- 		call c_rotateAlpha(instOri,locOri,rot,0,0)
- 		do i1 = 1, 3
- 		    call c_rotateAlpha(dInstOri,locOri,rot,i1,0)
- 			prod(:,:) = c_0
- 			do i2 = 1,3
- 			    do i3 = 1, 3
- 				    do i4 = 1, 3
- 					    prod(i2,i3) = prod(i2,i3) + dInstOri(i2,i4)*instOri(i3,i4)
- 					enddo
- 				enddo
- 			enddo
- 			drIdrG(1,i1) = prod(2,3)
- 			drIdrG(2,i1) = prod(3,1)
- 			drIdrG(3,i1) = prod(1,2)
- 		enddo
- 		
- 	end subroutine c_getdrIdrG
- 	
- 	subroutine c_getInstDof(instU,globU,globNds,instOri,locOri,rot,drIdrG,numNds,dofTable,dv,dv2)
+ 	subroutine c_getInstDof(instU,globU,globNds,instOri,locOri,numNds,dofTable,dv,dv2)
  	    implicit none
  		
  		integer, intent(in) :: numNds, dv, dv2
  		integer, intent(in) :: dofTable(2,33)
- 		complex*16, intent(in) :: globU(6,11), globNds(3,10), instOri(3,48), locOri(3,3), rot(3), drIdrG(3,16)
+ 		complex*16, intent(in) :: globU(6,11), globNds(3,10), instOri(3,240), locOri(3,3)
  		complex*16, intent(out) :: instU(6,11)
  
-         complex*16 :: nnInv, delRot(3), ddelRot(3)
-         integer :: i1, i2, i3, i4, i5, var, nd, var2, nd2
+         complex*16 :: nnInv, nnInv2, delRot(3), ddelRot(3)
+         integer :: i1, i2, i3, i4, i5, var, nd, var2, nd2, stCol1, stCol2
  		
  		if(dv + dv2 .eq. 0) then
  		    instU(:,:) = c_0
@@ -1024,15 +805,12 @@
  			enddo
  			do i1 = 1, numNds
  			    instU(4:6,i1) = c_0
- 				delRot(:) = globU(4:6,i1) - rot(:)
+ 				stCol1 = 48*i1
+ 				stCol2 = 0
  				do i2 = 1, 3
- 				   do i3 = 1, 3
- 				       instU(i2+3,i1) = instU(i2+3,i1) + drIdrG(i2,i3)*delRot(i3)
- 					   ! do i4 = 1, 3
- 					       ! i5 = 4*i3 + i4
- 						   ! instU(i2+3,i1) = instU(i2+3,i1) + c_p5*drIdrG(i2,i5)*delRot(i3)*delRot(i4)
- 					   ! enddo
- 				   enddo
+ 				    instU(4,i1) = instU(4,i1) + instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 					instU(5,i1) = instU(5,i1) + instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 					instU(6,i1) = instU(6,i1) + instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
  				enddo
  			enddo
  		elseif(dv*dv2 .eq. 0) then
@@ -1052,28 +830,34 @@
  					instU(var,nd) = c_1
  				endif
  			else
- 			    i5 = 3*(var - 3)
  				nnInv = numNds
  				nnInv = c_1/nnInv
  				instU(:,:) = c_0
+ 				stCol1 = 12*(var-3)
  				do i1 = 1, 3
  					do i2 = 1, numNds
  						do i3 = 1, 3
- 							instU(i1,i2) = instU(i1,i2) + nnInv*instOri(i1,i5+i3)*(globU(i3,i2) + globNds(i3,i2))
+ 							instU(i1,i2) = instU(i1,i2) + nnInv*instOri(i1,stCol1+i3)*(globU(i3,i2) + globNds(i3,i2))
  						enddo
  					enddo
  				enddo
- 				delRot(:) = globU(4:6,nd) - rot(:)
- 				ddelRot(:) = c_0
- 				ddelRot(var-3) = c_1
+ 				instU(4:6,i1) = c_0
+ 				do i1 = 1, numNds
+ 					stCol1 = 48*i1
+ 					stCol2 = 12*(var-3)
+ 					do i2 = 1, 3
+ 						instU(4,i1) = instU(4,i1) + nnInv*instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 						instU(5,i1) = instU(5,i1) + nnInv*instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 						instU(6,i1) = instU(6,i1) + nnInv*instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
+ 					enddo
+ 				enddo
+ 				i1 = nd
+ 				stCol1 = 48*i1 + 12*(var-3)
+ 				stCol2 = 0
  				do i2 = 1, 3
- 				   do i3 = 1, 3
- 				       instU(i2+3,nd) = instU(i2+3,nd) + drIdrG(i2,i3)*ddelRot(i3)
- 					   ! do i4 = 1, 3
- 					       ! i5 = 4*i3 + i4
- 						   ! instU(i2+3,nd) = instU(i2+3,nd) + c_p5*drIdrG(i2,i5)*(ddelRot(i3)*delRot(i4) + delRot(i3)*ddelRot(i4))
- 					   ! enddo
- 				   enddo
+ 					instU(4,i1) = instU(4,i1) + instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 					instU(5,i1) = instU(5,i1) + instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 					instU(6,i1) = instU(6,i1) + instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
  				enddo
  			endif
  		else
@@ -1092,23 +876,54 @@
  			nnInv = c_1/nnInv
  			instU(:,:) = c_0
  			if(var .lt. 4 .and. var2 .ge. 4 .and. nd .le. numNds) then
- 			    i1 = 3*(var2-3)
- 				instU(1:3,nd) = nnInv*instOri(:,i1+var)
+ 			    stCol1 = 12*(var2-3)
+ 				instU(1:3,nd) = nnInv*instOri(:,stCol1+var)
  			elseif(var .ge. 4 .and. var2 .ge. 4) then
- 			    nnInv = nnInv*nnInv
- 			    i1 = 12*(var-3) + 3*(var2-3)
+ 			    nnInv2 = nnInv*nnInv
+ 			    stCol1 = 12*(var-3) + 3*(var2-3)
  				do i2 = 1, 3
  				    do i3 = 1, 3
  					    do i4 = 1, numNds
- 						    instU(i2,i4) = instU(i2,i4) + instOri(i2,i1+i3)*(globU(i3,i4) + globNds(i3,i4))
+ 						    instU(i2,i4) = instU(i2,i4) + instOri(i2,stCol1+i3)*(globU(i3,i4) + globNds(i3,i4))
  						enddo
  					enddo
  				enddo
- 				instU(:,1:numNds) = nnInv*instU(:,1:numNds)
- 				! if(nd .eq. nd2) then
- 				    ! i1 = 4*(var-3) + (var2-3)
- 				    ! instU(4:6,nd) = drIdrG(:,i1)
- 				! endif
+ 				instU(1:3,1:numNds) = nnInv2*instU(1:3,1:numNds)
+ 				do i1 = 1, numNds
+ 					stCol1 = 48*i1
+ 					stCol2 = 12*(var-3) + 3*(var2-3)
+ 					do i2 = 1, 3
+ 						instU(4,i1) = instU(4,i1) + nnInv2*instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 						instU(5,i1) = instU(5,i1) + nnInv2*instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 						instU(6,i1) = instU(6,i1) + nnInv2*instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
+ 					enddo
+ 				enddo
+ 				i1 = nd
+ 				stCol1 = 48*i1 + 12*(var-3)
+ 				stCol2 = 12*(var2-3)
+ 				do i2 = 1, 3
+ 					instU(4,i1) = instU(4,i1) + nnInv*instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 					instU(5,i1) = instU(5,i1) + nnInv*instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 					instU(6,i1) = instU(6,i1) + nnInv*instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
+ 				enddo
+ 				i1 = nd2
+ 				stCol1 = 48*i1 + 12*(var2-3)
+ 				stCol2 = 12*(var-3)
+ 				do i2 = 1, 3
+ 					instU(4,i1) = instU(4,i1) + nnInv*instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 					instU(5,i1) = instU(5,i1) + nnInv*instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 					instU(6,i1) = instU(6,i1) + nnInv*instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
+ 				enddo
+ 				if(nd .eq. nd2) then
+ 				    i1 = nd
+ 					stCol1 = 48*i1 + 12*(var-3) + 3*(var2-3)
+ 					stCol2 = 0
+ 					do i2 = 1, 3
+ 						instU(4,i1) = instU(4,i1) + instOri(2,stCol1+i2)*instOri(3,stCol2+i2)
+ 						instU(5,i1) = instU(5,i1) + instOri(3,stCol1+i2)*instOri(1,stCol2+i2)
+ 						instU(6,i1) = instU(6,i1) + instOri(1,stCol1+i2)*instOri(2,stCol2+i2)
+ 					enddo
+ 				endif
  			endif
  		endif
  		
@@ -1286,7 +1101,7 @@
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
  
          complex*16 :: ux(3,3), rx(3,3), Nx(11,3), Nvec(11), detJ
- 		complex*16 :: instOri(3,48), drIdrG(3,16), rot(3), ptRot(3)
+ 		complex*16 :: instOri(3,240), drIdrG(3,16), rot(3), ptRot(3)
  		complex*16 :: instU(6,11)
  		complex*16 :: rnNds
  		integer :: i1, i2, i3
@@ -1300,20 +1115,16 @@
  		
  		call c_getIntPtData(Nvec,Nx,detJ,locNds,sPt,eType,numNds)
  		
- 		rot(:) = c_0
- 		do i1 = 1, numNds
- 		    rot(:) = rot(:) + disp(4:6,i1)*Nvec(i1)
- 		enddo
- 		
- 		call c_getInstOrient(instOri,orient,rot)
+ 		call c_getInstOrient(instOri,orient,disp,numNds,0)
+ 		call c_getInstDof(instU,disp,globNds,instOri,orient,numNds,dofTable,0,0)
  		
  		ux(:,:) = c_0
  		rx(:,:) = c_0
  		do i1 = 1, 3
  		    do i2 = 1, 3
  			    do i3 = 1, 10
- 				    ux(i1,i2) = ux(i1,i2) + disp(i1,i3)*Nx(i3,i2)
- 					rx(i1,i2) = rx(i1,i2) + disp(i1+3,i3)*Nx(i3,i2)
+ 				    ux(i1,i2) = ux(i1,i2) + instU(i1,i3)*Nx(i3,i2)
+ 					rx(i1,i2) = rx(i1,i2) + instU(i1+3,i3)*Nx(i3,i2)
  				enddo
  			enddo
  		enddo
@@ -1325,7 +1136,7 @@
  			enddo
  		enddo
  		
- 		call c_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,0,0,dofTable)
+ 		call c_getShellDef(shDef,ux,ptRot,rx)
  		ptT = c_0
  		do i2 = 1, numNds
  			ptT = ptT + Nvec(i2)*temp(i2)
@@ -1358,7 +1169,7 @@
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
  
          complex*16 :: ux(3,3), rx(3,3), Nx(11,3), Nvec(11), detJ
- 		complex*16 :: instOri(3,48), drIdrG(3,16), rot(3), ptRot(3)
+ 		complex*16 :: instOri(3,240), drIdrG(3,16), rot(3), ptRot(3)
  		complex*16 :: instU(6,11)
  		complex*16 :: rnNds
  		integer :: i1, i2, i3, i4, i5
@@ -1372,33 +1183,47 @@
  		
  		call c_getIntPtData(Nvec,Nx,detJ,locNds,sPt,eType,numNds)
  		
- 		rot(:) = c_0
- 		do i1 = 1, numNds
- 		    rot(:) = rot(:) + disp(4:6,i1)*Nvec(i1)
- 		enddo
- 		
- 		call c_getInstOrient(instOri,orient,rot)
- 		
- 		ux(:,:) = c_0
- 		rx(:,:) = c_0
- 		do i1 = 1, 3
- 		    do i2 = 1, 3
- 			    do i3 = 1, 10
- 				    ux(i1,i2) = ux(i1,i2) + disp(i1,i3)*Nx(i3,i2)
- 					rx(i1,i2) = rx(i1,i2) + disp(i1+3,i3)*Nx(i3,i2)
- 				enddo
- 			enddo
- 		enddo
- 		
+ 		call c_getInstOrient(instOri,orient,disp,numNds,0)
  		i1 = numNds*dofPerNd + numIntDof
  		do i5 = 1, i1
- 			call c_getShellDef(dsDdU(:,i5),ux,rx,Nvec,Nx,orient,instOri,i5,0,dofTable)
+ 			call c_getInstDof(instU,disp,globNds,instOri,orient,numNds,dofTable,i5,0)
+ 			
+ 			ux(:,:) = c_0
+ 			rx(:,:) = c_0
+ 			if(dofTable(1,i5) .le. 3) then
+ 			    i3 = dofTable(2,i5)
+ 				do i1 = 1, 3
+ 					do i2 = 1, 3
+ 						ux(i1,i2) = ux(i1,i2) + instU(i1,i3)*Nx(i3,i2)
+ 					enddo
+ 				enddo
+ 			else
+ 			    i4 = dofTable(2,i5)
+ 			    do i1 = 1, 3
+ 					do i2 = 1, 3
+ 						do i3 = 1, 10
+ 							ux(i1,i2) = ux(i1,i2) + instU(i1,i3)*Nx(i3,i2)
+ 						enddo
+ 						rx(i1,i2) = rx(i1,i2) + instU(i1+3,i4)*Nx(i4,i2)
+ 					enddo
+ 				enddo
+ 				i4 = dofTable(1,i5) - 3
+ 			endif
+ 			
+ 			ptRot(:) = c_0
+ 			do i1 = 1, 3
+ 				do i2 = 1, numNds
+ 					ptRot(i1) = ptRot(i1) + instU(i1+3,i2)*Nvec(i2)
+ 				enddo
+ 			enddo
+ 			
+ 			call c_getShellDef(dsDdU(:,i5),ux,ptRot,rx)
  			dfMdU(:,i5) = c_0
  			do i2 = 1, 9
  				do i3 = 1, 9
  					dfMdU(i2,i5) = dfMdU(i2,i5) + ABD(i2,i3)*dsDdU(i3,i5)
  				enddo
- 			enddo
+ 			enddo	
  		enddo
  
          dfMdT(:,:) = c_0
@@ -1428,7 +1253,7 @@
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
  
          complex*16 :: ux(3,3), rx(3,3), Nx(11,3), Nvec(11), detJ, PtT
- 		complex*16 :: instOri(3,48), drIdrG(3,16), rot(3), ptRot(3)
+ 		complex*16 :: instOri(3,240), drIdrG(3,16), rot(3), ptRot(3)
  		complex*16 :: instU(6,11)
  		complex*16 :: rnNds
  		integer :: i1, i2, i3
@@ -1442,25 +1267,8 @@
  		
  		call c_getIntPtData(Nvec,Nx,detJ,locNds,sPt,eType,numNds)
  		
- 		rot(:) = c_0
- 		do i1 = 1, numNds
- 		    rot(:) = rot(:) + disp(4:6,i1)
- 		enddo
- 		rnNds = numNds
- 		rot(:) = (c_1/rnNds)*rot(:)
- 		
- 		call c_getInstOrient(instOri,orient,rot)
- 		
- 		rot(:) = c_0
- 		do i1 = 1, numNds
- 		    rot(:) = rot(:) + pDisp(4:6,i1)
- 		enddo
- 		rnNds = numNds
- 		rot(:) = (c_1/rnNds)*rot(:)
- 		
- 		call c_getdrIdrG(drIdrG,orient,rot)
- 		
- 		call c_getInstDof(instU,disp,globNds,instOri,orient,rot,drIdrG,numNds,dofTable,0,0)
+ 		call c_getInstOrient(instOri,orient,disp,numNds,0)
+ 		call c_getInstDof(instU,disp,globNds,instOri,orient,numNds,dofTable,0,0)
  		
  		ux(:,:) = c_0
  		rx(:,:) = c_0
@@ -1513,7 +1321,7 @@
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
  
          complex*16 :: ux(3,3), rx(3,3), Nx(11,3), Nvec(11), detJ, dPtTdT(10)
- 		complex*16 :: instOri(3,48), drIdrG(3,16), rot(3), ptRot(3)
+ 		complex*16 :: instOri(3,240), drIdrG(3,16), rot(3), ptRot(3)
  		complex*16 :: instU(6,11)
  		complex*16 :: rnNds
  		integer :: i1, i2, i3, i4, i5
@@ -1527,27 +1335,10 @@
  		
  		call c_getIntPtData(Nvec,Nx,detJ,locNds,sPt,eType,numNds)
  		
- 		rot(:) = c_0
- 		do i1 = 1, numNds
- 		    rot(:) = rot(:) + disp(4:6,i1)
- 		enddo
- 		rnNds = numNds
- 		rot(:) = (c_1/rnNds)*rot(:)
- 		
- 		call c_getInstOrient(instOri,orient,rot)
- 		
- 		rot(:) = c_0
- 		do i1 = 1, numNds
- 		    rot(:) = rot(:) + pDisp(4:6,i1)
- 		enddo
- 		rnNds = numNds
- 		rot(:) = (c_1/rnNds)*rot(:)
- 		
- 		call c_getdrIdrG(drIdrG,orient,rot)
- 		
+ 		call c_getInstOrient(instOri,orient,disp,numNds,0)
  		i1 = numNds*dofPerNd + numIntDof
  		do i5 = 1, i1
- 			call c_getInstDof(instU,disp,globNds,instOri,orient,rot,drIdrG,numNds,dofTable,i5,0)
+ 			call c_getInstDof(instU,disp,globNds,instOri,orient,numNds,dofTable,i5,0)
  			
  			ux(:,:) = c_0
  			rx(:,:) = c_0
@@ -1955,7 +1746,7 @@
  
          eType = elementType(elNum)		
  		call c_getElRuk(dSEdU,dRdU,dRdT,stEn,dSEdT,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
+ 	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
  		
  	end subroutine c_getElStrainEnergy
  	
@@ -2029,7 +1820,7 @@
  		complex*16 :: bStiff(6,6), bMass(6,6), btExp(6), btCond(3,3), bsHeat
  		complex*16 :: temp(10), Tdot(10), pTemp(10), pTdot(10)
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
- 		complex*16 :: statInOri(3,48), statdrIdrG(3,16), statRot(3)		
+ 		complex*16 :: statInOri(3,240), statdrIdrG(3,16), statRot(3)		
  
          complex*16 :: dRdA(33,33), fakeAcc(6,11)
  		complex*16 :: Nvec(11), Nx(11,3), detJ, nnInv
@@ -2053,22 +1844,12 @@
  			nnInv = numNds
  			nnInv = c_1/nnInv
  			statRot(:) = nnInv*statRot(:)
- 			call c_getInstOrient(statInOri,orient,statRot)
- 			statRot(:) = c_0
- 			do i4 = 1, numNds
- 				statRot(:) = statRot(:) + pDisp(4:6,i4)
- 			enddo
- 			nnInv = numNds
- 			nnInv = c_1/nnInv
- 			statRot(:) = nnInv*statRot(:)
- 			call c_getdrIdrG(statdrIdrG,orient,statRot)
- 			statInOri(:,4:48) = c_0
- 			statdrIdrG(:,4:16) = c_0
+ 			call c_getInstOrient(statInOri,orient,disp,numNds,1)
  		    do i1 = 1, numNds
  			    fakeAcc(:,i1) = bdyFrc(:)
  			enddo
  			call c_getElRum(ndFrc,dRdA,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 	            locNds, globNds, orient, statInOri, statdrIdrG, statRot, den, sMass, bMass, disp, fakeAcc)
+ 	            locNds, globNds, orient, statInOri, den, sMass, bMass, disp, fakeAcc)
  		else
  		    ndFrc(:) = c_0
  			do i1 = 1, numIntPts
@@ -2106,7 +1887,7 @@
  		complex*16 :: bStiff(6,6), bMass(6,6), btExp(6), btCond(3,3), bsHeat
  		complex*16 :: temp(10), Tdot(10), pTemp(10), pTdot(10)
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
- 		complex*16 :: statInOri(3,48), statdrIdrG(3,12), statRot(3)		
+ 		complex*16 :: statInOri(3,240), statdrIdrG(3,12), statRot(3)		
  
          complex*16 :: elCent(3), nnInv, posVec(3), dp, mag, unitAxis(3)
  		integer :: i1, i2, i3, i4, i5, eType
@@ -2428,25 +2209,30 @@
  	end subroutine c_getElRt
  	
  	subroutine c_getElRuk(Ruk,dRdU,dRdT,stEn,dSEdT,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable, &
- 	    intPts,ipWt,locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
+ 	    intPts,ipWt,locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
  	    implicit none
  		
  		complex*16, intent(out) :: Ruk(33), dRdU(33,33), dRdT(33,10), stEn, dSEdT(10)
  		integer, intent(in) :: buildMat, eType, numNds, dofPerNd, numIntDof, numIntPts, dofTable(2,33)
  		complex*16, intent(in) :: intPts(3,8), ipWt(8), locNds(3,10), globNds(3,10)
  		complex*16, intent(in) :: orient(3,3), cMat(6,6), tExp(6), ABD(9,9), stExp(6), bStiff(6,6), btExp(6)
- 		complex*16, intent(in) :: temp(10), disp(6,11), pDisp(6,11)
+ 		complex*16, intent(in) :: temp(10), disp(6,11)
  		
  		complex*16 :: dedU(9,33), cdedU(9,33)
- 		complex*16 :: instOri(3,48), drIdrG(3,16), elRot(3), ptRot(3)
+ 		complex*16 :: instOri(3,240), drIdrG(3,16), elRot(3), ptRot(3)
  		complex*16 :: instDofMat(6,11)
  		complex*16 :: nnReal
  		complex*16 :: Nvec(11), Nx(11,3), detJ
  		complex*16 :: strain(6), stress(6)
  		complex*16 :: shDef(9), shFrcMom(9), beamDef(6), beamFrcMom(6), ux(3,3), rx(3,3)
  		complex*16 :: dfmdT(9,10), dsdT(6,10)
+ 		complex*16 :: duxdR(3,9)
  		complex*16 :: ptTemp, teProd, r3Fact
  		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, nd1, var1, nd2, var2
+ 		
+ 		if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+ 			call c_getInstOrient(instOri,orient,disp,numNds,0)
+ 		endif
  		
  		Ruk(:) = c_0
  		dRdU(:,:) = c_0
@@ -2456,31 +2242,25 @@
  		do i1 = 1, numIntPts
  		    call c_getIntPtData(Nvec,Nx,detJ,locNds,intPts(:,i1),eType,numNds)
  			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+ 			    call c_getInstDof(instDofMat,disp,globNds,instOri,orient,numNds,dofTable,0,0)
  			    ptRot(:) = c_0
  				do i2 = 1, numNds
  				    do i3 = 1, 3
- 				        ptRot(i3) = ptRot(i3) + disp(3+i3,i2)*Nvec(i2)
+ 				        ptRot(i3) = ptRot(i3) + instDofMat(3+i3,i2)*Nvec(i2)
  					enddo
  				enddo
- 				call c_getInstOrient(instOri,orient,ptRot)
- 				ux(:,:) = c_0
- 				do i2 = 1, 3
+ 			    ux(:,:) = c_0
+ 				rx(:,:) = c_0
+ 			    do i2 = 1, 3
  				    do i3 = 1, 3
  					    do i4 = 1, 10
- 							ux(i2,i3) = ux(i2,i3) + disp(i2,i4)*Nx(i4,i3)
- 						enddo
- 					enddo
- 				enddo
- 				rx(:,:) = c_0
- 				do i2 = 1, 3
- 				    do i3 = 1, 3
- 					    do i4 = 1, numNds
- 							rx(i2,i3) = rx(i2,i3) + disp(i2+3,i4)*Nx(i4,i3)
+ 						    ux(i2,i3) = ux(i2,i3) + instDofMat(i2,i4)*Nx(i4,i3)
+ 							rx(i2,i3) = rx(i2,i3) + instDofMat(i2+3,i4)*Nx(i4,i3)
  						enddo
  					enddo
  				enddo
  				if(eType .eq. 41 .or. eType .eq. 3) then
- 				    call c_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,0,0,dofTable)
+ 					call c_getShellDef(shDef,ux,ptRot,rx)
  					ptTemp = c_0
  					do i2 = 1, numNds
  						ptTemp = ptTemp + Nvec(i2)*temp(i2)
@@ -2498,104 +2278,146 @@
  						dSEdT(1:numNds) = dSEdT(1:numNds) + c_p5*dfMdT(i2,1:numNds)*shDef(i2)*detJ*ipWt(i1)
  					enddo
  				else
- 				
+ 				    call c_getBeamDef(beamDef,ux,ptRot,rx)
+ 					ptTemp = c_0
+ 					do i2 = 1, numNds
+ 						ptTemp = ptTemp + Nvec(i2)*temp(i2)
+ 					enddo
+ 					beamFrcMom(:) = c_0
+ 					do i2 = 1, 6
+ 						do i3 = 1, 6
+ 							beamFrcMom(i2) = beamFrcMom(i2) + bStiff(i2,i3)*beamDef(i3)
+ 						enddo
+ 					enddo
+ 					beamFrcMom(1:6) = beamFrcMom(1:6) - ptTemp*btExp(1:6)
+ 					do i2 = 1, 6
+ 					    stEn = stEn + c_p5*beamFrcMom(i2)*beamDef(i2)*detJ*ipWt(i1)
+ 					    dfMdT(i2,1:numNds) = -Nvec(1:numNds)*btExp(i2)
+ 						dSEdT(1:numNds) = dSEdT(1:numNds) + c_p5*dfMdT(i2,1:numNds)*beamDef(i2)*detJ*ipWt(i1)
+ 					enddo
  				endif
  				i2 = numNds*dofPerNd + numIntDof
- 				do i3 = 1, i2
- 				    if(eType .eq. 41 .or. eType .eq. 3) then
- 						call c_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,i3,0,dofTable)
+ 				do i4 = 1, i2
+ 				    call c_getInstDof(instDofMat,disp,globNds,instOri,orient,numNds,dofTable,i4,0)
+ 					ptRot(:) = c_0
+ 					do i5 = 1, numNds
+ 						ptRot(:) = ptRot(:) + instDofMat(4:6,i5)*Nvec(i5)
+ 					enddo
+ 					ux(:,:) = c_0
+ 					rx(:,:) = c_0
+ 					if(dofTable(1,i4) .lt. 4) then  !! differentiating wrt displacement dof
+ 					    i7 = dofTable(2,i4)
+ 						do i5 = 1, 3
+ 							do i6 = 1, 3
+ 								ux(i5,i6) = ux(i5,i6) + instDofMat(i5,i7)*Nx(i7,i6)
+ 							enddo
+ 						enddo
+ 					else  !! wrt rotation dof
+ 						do i6 = 1, 3
+ 							do i7 = 1, 3
+ 								do i8 = 1, numNds
+ 									ux(i6,i7) = ux(i6,i7) + instDofMat(i6,i8)*Nx(i8,i7)
+ 									rx(i6,i7) = rx(i6,i7) + instDofMat(i6+3,i8)*Nx(i8,i7)
+ 								enddo
+ 							enddo
+ 						enddo
+ 					endif
+ 					if(eType .eq. 41 .or. eType .eq. 3) then
+ 						call c_getShellDef(shDef,ux,ptRot,rx)
  						if(buildMat .eq. 1) then
- 						    dedU(:,i3) = shDef(:)
+ 						    dedU(:,i4) = shDef(:)
  							teProd = c_0
  							do i5 = 1, 6
- 							    teProd = teProd - stExp(i5)*dedU(i5,i3)
+ 							    teProd = teProd - stExp(i5)*dedU(i5,i4)
  							enddo
  							teProd = (detJ*ipWt(i1))*teProd
- 							dRdT(i3,1:numNds) = dRdT(i3,1:numNds) + teProd*Nvec(1:numNds)
+ 							dRdT(i4,1:numNds) = dRdT(i4,1:numNds) + teProd*Nvec(1:numNds)
  						endif
  						shDef = (detJ*ipWt(i1))*shDef
  						do i5 = 1, 9
- 							Ruk(i3) = Ruk(i3) + shFrcMom(i5)*shDef(i5)
+ 							Ruk(i4) = Ruk(i4) + shFrcMom(i5)*shDef(i5)
  						enddo
  					else
  					    call c_getBeamDef(beamDef,ux,ptRot,rx)
  						if(buildMat .eq. 1) then
- 						    dedU(1:6,i3) = beamDef(:)
+ 						    dedU(1:6,i4) = beamDef(:)
  							teProd = c_0
  							do i5 = 1, 6
- 							    teProd = teProd - btExp(i5)*dedU(i5,i3)
+ 							    teProd = teProd - btExp(i5)*dedU(i5,i4)
  							enddo
  							teProd = (detJ*ipWt(i1))*teProd
- 							dRdT(i3,1:numNds) = dRdT(i3,1:numNds) + teProd*Nvec(1:numNds)
+ 							dRdT(i4,1:numNds) = dRdT(i4,1:numNds) + teProd*Nvec(1:numNds)
  						endif
  						beamDef = (detJ*ipWt(i1))*beamDef
  						do i5 = 1, 6
- 						    Ruk(i3) = Ruk(i3) + beamFrcMom(i5)*beamDef(i5)
+ 						    Ruk(i4) = Ruk(i4) + beamFrcMom(i5)*beamDef(i5)
  						enddo
  					endif
- 					if(buildMat .eq. 1 .and. nLGeom .eq. 1) then
- 					    do i4 = i3, i2
- 						    if(eType .eq. 41 .or. eType .eq. 3) then
- 							    call c_getShellDef(shDef,ux,rx,Nvec,Nx,orient,instOri,i3,i4,dofTable)
+ 					if(buildMat .eq. 1) then
+ 					    do i10 = i4, i2
+ 							call c_getInstDof(instDofMat,disp,globNds,instOri,orient,numNds,dofTable,i4,i10)
+ 							ptRot(:) = c_0
+ 							do i5 = 1, numNds
+ 								ptRot(:) = ptRot(:) + instDofMat(4:6,i5)*Nvec(i5)
+ 							enddo
+ 							if(dofTable(1,i4) .lt. dofTable(1,i10)) then
+ 							    var1 = dofTable(1,i4)
+ 								nd1 = dofTable(2,i4)
+ 								var2 = dofTable(1,i10)
+ 								nd2 = dofTable(2,i10)
+ 							else
+ 							    var1 = dofTable(1,i10)
+ 								nd1 = dofTable(2,i10)
+ 								var2 = dofTable(1,i4)
+ 								nd2 = dofTable(2,i4)
+ 							endif
+ 							ux(:,:) = c_0
+ 							rx(:,:) = c_0
+ 							if(var1 .lt. 4 .and. var2 .ge. 4) then  !! differentiating wrt displacement dof
+ 								do i5 = 1, 3
+ 									do i6 = 1, 3
+ 										ux(i5,i6) = ux(i5,i6) + instDofMat(i5,nd1)*Nx(nd1,i6)
+ 										! rx(i5,i6) = rx(i5,i6) + instDofMat(i5+3,nd2)*Nx(nd2,i6)
+ 									enddo
+ 								enddo
+ 							elseif(var1 .ge. 4 .and. var2 .ge. 4) then !! wrt rotation dof
+ 								do i6 = 1, 3
+ 									do i7 = 1, 3
+ 										do i8 = 1, numNds
+ 											ux(i6,i7) = ux(i6,i7) + instDofMat(i6,i8)*Nx(i8,i7)
+ 											rx(i6,i7) = rx(i6,i7) + instDofMat(i6+3,i8)*Nx(i8,i7)
+ 										enddo
+ 									enddo
+ 								enddo
+ 							endif
+ 							if(eType .eq. 41 .or. eType .eq. 3) then
+ 								call c_getShellDef(shDef,ux,ptRot,rx)
  								shDef = (detJ*ipWt(i1))*shDef
  								do i5 = 1, 9
- 								    dRdU(i3,i4) = dRdU(i3,i4) + shFrcMom(i5)*shDef(i5)
+ 									dRdU(i4,i10) = dRdU(i4,i10) + shFrcMom(i5)*shDef(i5)
  								enddo
- 								dRdU(i4,i3) = dRdU(i3,i4)
+ 								dRdU(i10,i4) = dRdU(i4,i10)
  							else
- 							
- 							endif
+ 								call c_getBeamDef(beamDef,ux,ptRot,rx)
+ 								beamDef = (detJ*ipWt(i1))*beamDef
+ 								do i5 = 1, 6
+ 									dRdU(i4,i10) = dRdU(i4,i10) + beamFrcMom(i5)*beamDef(i5)
+ 								enddo
+ 								dRdU(i10,i4) = dRdU(i4,i10)
+ 							endif					
  						enddo
  					endif
  				enddo
- 				if(buildMat .eq. 1) then
- 				    cdedU(:,:) = c_0
- 					if(eType .eq. 41 .or. eType .eq. 3) then
- 						i5 = numNds*dofPerNd + numIntDof
- 						do i2 = 1, 9
- 							do i3 = 1, i5
- 								do i4 = 1, 9
- 									cdedU(i2,i3) = cdedU(i2,i3) + ABD(i2,i4)*dedU(i4,i3)
- 								enddo
- 							enddo
- 						enddo
- 						cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
- 						do i2 = 1, i5
- 							do i3 = 1, i5
- 								do i4 = 1, 9
- 									dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
- 								enddo
- 							enddo
- 						enddo
- 					elseif(eType .eq. 2) then
- 						i5 = numNds*dofPerNd + numIntDof
- 						do i2 = 1, 6
- 							do i3 = 1, i5
- 								do i4 = 1, 6
- 									cdedU(i2,i3) = cdedU(i2,i3) + bStiff(i2,i4)*dedU(i4,i3)
- 								enddo
- 							enddo
- 						enddo
- 						cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
- 						do i2 = 1, i5
- 							do i3 = 1, i5
- 								do i4 = 1, 6
- 									dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
- 								enddo
- 							enddo
- 						enddo
- 					endif
- 				endif
  			else
  			    ux(:,:) = c_0
  				do i2 = 1, 3
  				    do i3 = 1, 3
  					    do i4 = 1, 11
- 							ux(i2,i3) = ux(i2,i3) + disp(i2,i4)*Nx(i4,i3)
+ 						    ux(i2,i3) = ux(i2,i3) + disp(i2,i4)*Nx(i4,i3)
  						enddo
  					enddo
  				enddo
- 				call c_getNLStrain(strain,ux,Nx,orient,0,0,dofTable)
+ 			    call c_getNLStrain(strain,ux,Nx,orient,0,0,dofTable)
  				ptTemp = c_0
  				do i2 = 1, numNds
  				    ptTemp = ptTemp + Nvec(i2)*temp(i2)
@@ -2628,18 +2450,53 @@
  					do i4 = 1, 6
  					    Ruk(i3) = Ruk(i3) + stress(i4)*strain(i4)
  					enddo
- 					if(buildMat .eq. 1 .and. nLGeom .eq. 1) then
- 						do i5 = i3, i2
- 							call c_getNLStrain(strain,ux,Nx,orient,i3,i5,dofTable)
- 							strain = (detJ*ipWt(i1))*strain
- 							do i4 = 1, 6
- 								dRdU(i3,i5) = dRdU(i3,i5) + stress(i4)*strain(i4)
- 							enddo
- 							dRdU(i5,i3) = dRdU(i3,i5)
+ 					do i5 = i3, i2
+ 					    call c_getNLStrain(strain,ux,Nx,orient,i3,i5,dofTable)
+ 						strain = (detJ*ipWt(i1))*strain
+ 						do i4 = 1, 6
+ 							dRdU(i3,i5) = dRdU(i3,i5) + stress(i4)*strain(i4)
  						enddo
- 					endif
+ 						dRdU(i5,i3) = dRdU(i3,i5)
+ 					enddo
  				enddo
- 				if(buildMat .eq. 1) then
+ 			endif
+ 			if(buildMat .eq. 1) then
+ 				cdedU(:,:) = c_0
+ 				if(eType .eq. 41 .or. eType .eq. 3) then
+ 					i5 = numNds*dofPerNd + numIntDof
+ 					do i2 = 1, 9
+ 						do i3 = 1, i5
+ 							do i4 = 1, 9
+ 								cdedU(i2,i3) = cdedU(i2,i3) + ABD(i2,i4)*dedU(i4,i3)
+ 							enddo
+ 						enddo
+ 					enddo
+ 					cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
+ 					do i2 = 1, i5
+ 						do i3 = 1, i5
+ 							do i4 = 1, 9
+ 								dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
+ 							enddo
+ 						enddo
+ 					enddo
+ 				elseif(eType .eq. 2) then
+ 					i5 = numNds*dofPerNd + numIntDof
+ 					do i2 = 1, 6
+ 						do i3 = 1, i5
+ 							do i4 = 1, 6
+ 								cdedU(i2,i3) = cdedU(i2,i3) + bStiff(i2,i4)*dedU(i4,i3)
+ 							enddo
+ 						enddo
+ 					enddo
+ 					cdedU(:,:) = (detJ*ipWt(i1))*cdedU(:,:)
+ 					do i2 = 1, i5
+ 						do i3 = 1, i5
+ 							do i4 = 1, 6
+ 								dRdU(i2,i3) = dRdU(i2,i3) + dedU(i4,i2)*cdedU(i4,i3)
+ 							enddo
+ 						enddo
+ 					enddo
+ 				else
  				    i5 = numNds*dofPerNd + numIntDof
  					do i2 = 1, 6
  						do i3 = 1, i5
@@ -2657,52 +2514,24 @@
  						enddo
  					enddo
  				endif
-             endif
+ 			endif
  		enddo
- 		
- 		! if(eType .eq. 41 .or. eType .eq. 3) then
-             ! r3Fact = c_0
- 			! i3 = numNds*dofPerNd
- 			! do i1 = 1, i3
- 			    ! i2 = dofTable(1,i1)
- 				! if(i2 .eq. 6) then
- 				    ! r3Fact = r3Fact + c_1*abs(dRdU(i1,i1))
- 				! endif
- 			! enddo
- 			! nnReal = numNds
- 			! r3Fact = 0.01d0*r3Fact/nnReal
- 			! do i1 = 1, i3
- 			    ! i2 = dofTable(1,i1)
- 				! if(i2 .eq. 6) then
- 				    ! do i4 = 1, i3
- 					    ! i5 = dofTable(1,i4)
- 						! if(i5 .eq. 6) then
- 						    ! if(i1 .eq. i4) then
- 							    ! dRdU(i1,i4) = dRdU(i1,i4) + (numNds-1)*r3Fact
- 							! else
- 							    ! dRdU(i1,i4) = dRdU(i1,i4) - r3Fact
- 							! endif
- 						! endif
- 					! enddo
- 				! endif
- 			! enddo
- 		! endif
  		
  	end subroutine c_getElRuk
  	
  	subroutine c_getElRum(Rum,dRdA,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 	    locNds, globNds, orient, statInOri, statdrIdrG, statRot, den, sMass, bMass, disp, acc)
+ 	    locNds, globNds, orient, statInOri, den, sMass, bMass, disp, acc)
  	    implicit none
  		
  		complex*16, intent(out) :: Rum(33), dRdA(33,33)
  		integer, intent(in) :: buildMat, eType, numNds, dofPerNd, numIntDof, numIntPts, dofTable(2,33)
  		complex*16, intent(in) :: intPts(3,8), ipWt(8)
  		complex*16, intent(in) :: locNds(3,10), globNds(3,10), orient(3,3)
- 		complex*16, intent(in) :: statInOri(3,48), statdrIdrG(3,16), statRot(3)
+ 		complex*16, intent(in) :: statInOri(3,240)
          complex*16, intent(in) :: den, sMass(6,6), bMass(6,6)
          complex*16, intent(in) :: disp(6,11), acc(6,11)
  		
- 		complex*16 :: instDofMat(6,363), instNodalAcc(6,4), iNAM(6,4), inerFrc(6), delU(6), accI
+ 		complex*16 :: instDofMat(6,11), instNodalAcc(6,4), iNAM(6,4), inerFrc(6), delU(6), accI
  		complex*16 :: dudU(6,33), MdudU(6,33), thisMass(6,6)
  		complex*16 :: Nvec(11), Nx(11,3), detJ
  		
@@ -2710,16 +2539,14 @@
  		
  		if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
  		    instDofMat(:,:) = c_0
- 			call c_getInstDof(instDofMat(:,1:11),disp,globNds,statInOri,orient,statRot,statdrIdrG,numNds,dofTable,0,0)
+ 			call c_getInstDof(instDofMat,disp,globNds,statInOri,orient,numNds,dofTable,0,0)
  			i1 = numNds*dofPerNd
- 			i3 = 11
  			instNodalAcc(:,:) = c_0
  			do i2 = 1, i1
- 			    call c_getInstDof(instDofMat(:,i3+1:i3+11),disp,globNds,statInOri,orient,statRot,statdrIdrG,numNds,dofTable,i2,0)
+ 			    call c_getInstDof(instDofMat,disp,globNds,statInOri,orient,numNds,dofTable,i2,0)
  				i4 = dofTable(1,i2)
  				i5 = dofTable(2,i2)
- 				instNodalAcc(:,:) = instNodalAcc(:,:) + acc(i4,i5)*instDofMat(:,i3+1:i3+4)
- 				i3 = i3 + 11
+ 				instNodalAcc(:,:) = instNodalAcc(:,:) + acc(i4,i5)*instDofMat(:,1:4)
  			enddo
  			if(eType .eq. 41 .or. eType .eq. 3) then
  			    thisMass = sMass
@@ -2747,13 +2574,13 @@
  						inerFrc(i2) = inerFrc(i2) + iNAM(i2,i3)*Nvec(i3)
  					enddo
  				enddo
- 				i2 = 11
  				i3 = numNds*dofPerNd
  				do i4 = 1, i3
  				    delU(:) = c_0
+ 					call c_getInstDof(instDofMat,disp,globNds,statInOri,orient,numNds,dofTable,i4,0)
  					do i5 = 1, 6
  					    do i6 = 1, numNds
- 						    delU(i5) = delU(i5) + instDofMat(i5,i6+i2)*Nvec(i6)
+ 						    delU(i5) = delU(i5) + instDofMat(i5,i2)*Nvec(i6)
  						enddo
  					enddo
  					if(buildMat .eq. 1) then
@@ -2816,7 +2643,7 @@
  	
  	subroutine c_getElRu(Ru,dRdU,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
  	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
- 		statInOri,statdrIdrG,statRot,den,sMass,bMass)
+ 		statInOri,den,sMass,bMass)
  	    implicit none
  		
  		complex*16, intent(out) :: Ru(33), dRdU(33,33)
@@ -2824,7 +2651,7 @@
  		complex*16, intent(in) :: intPts(3,8), ipWt(8), locNds(3,10), globNds(3,10), orient(3,3)
  		complex*16, intent(in) :: cMat(6,6), tExp(6), ABD(9,9), stExp(6), bStiff(6,6), btExp(6)
          complex*16, intent(in) :: temp(10), disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
- 		complex*16, intent(in) :: statInOri(3,48), statdrIdrG(3,16), statRot(3), den, sMass(6,6), bMass(6,6)
+ 		complex*16, intent(in) :: statInOri(3,240), den, sMass(6,6), bMass(6,6)
  		
  		complex*16 :: Ruk(33), Rum(33), Ruc(33), dRdVar(33,33), dRdT(33,10), stEn, dSEdT(10)
  		complex*16 :: velNext(6,11), accNext(6,11)
@@ -2832,7 +2659,7 @@
  		integer :: gt1, gt2
  		
  		call c_getElRuk(Ruk,dRdVar,dRdT,stEn,dSEdT,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,pDisp)
+ 	    locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp)
  		
  		Ru(:) = Ruk(:)
  		if(buildMat .eq. 1) then
@@ -2846,7 +2673,7 @@
  			velNext(:,:) = pVel(:,:) + delT*(c_1*(1d0-nMGamma)*pAcc(:,:) + nMGamma*accNext(:,:))
  			
  			call c_getElRum(Rum,dRdVar,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 			locNds,globNds,orient,statInOri,statdrIdrG,statRot,den,sMass,bMass,disp,accNext)
+ 			locNds,globNds,orient,statInOri,den,sMass,bMass,disp,accNext)
  			
  			Ru(:) = Ru(:) + Rum(:)
  			if(buildMat .eq. 1) then
@@ -2858,7 +2685,7 @@
  			
  			if(gt1 .eq. 1) then
  				call c_getElRuk(Ruc,dRdVar,dRdT,stEn,dSEdT,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,rayCoefK*velNext,rayCoefK*pVel)
+ 				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,rayCoefK*velNext)
                  Ru(:) = Ru(:) + Ruc
  				if(buildMat .eq. 1) then
  			        dRdU(:,:) = dRdU(:,:) + rayCoefK*(delT*nMGamma)*(c1*c2)*dRdVar(:,:)
@@ -2867,7 +2694,7 @@
  			
  			if(gt2 .eq. 1) then
  				call c_getElRum(Ruc,dRdVar,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
- 			    locNds,globNds,orient,statInOri,statdrIdrG,statRot,den,sMass,bMass,disp,rayCoefM*velNext)
+ 			    locNds,globNds,orient,statInOri,den,sMass,bMass,disp,rayCoefM*velNext)
                  Ru(:) = Ru(:) + Ruc
  				if(buildMat .eq. 1) then
  				    dRdU(:,:) = dRdU(:,:) + rayCoefM*(delT*nMGamma)*(c1*c2)*dRdVar(:,:)

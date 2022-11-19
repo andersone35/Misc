@@ -199,9 +199,7 @@ program AStrO_runJob
 					 solverMaxBW = 6*numNodes
 				endif
 				write(lfUnit,*) 'calling solve'
-				write(*,*) 'calling solve'
                 call solve()
-				write(*,*) 'called solve'
 114             numNodes = numNodes
             elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
 			    if(.not. allocated(currentRank)) then
