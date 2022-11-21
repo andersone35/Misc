@@ -710,8 +710,8 @@ module AStrO_r_elementEqns
 		real*8, intent(in) :: ux(3,3), rot(3), rx(3,3)
 		
 		def(1) = ux(1,1)
-		def(2) = ux(2,1)
-		def(3) = ux(3,1)
+		def(2) = ux(2,1) - rot(3)
+		def(3) = ux(3,1) + rot(2)
 		def(4) = rx(1,1)
 		def(5) = rx(2,1)
 		def(6) = rx(3,1)

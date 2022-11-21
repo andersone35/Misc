@@ -1030,6 +1030,7 @@ module AStrO_commandFunctions
 		
 		real*8, allocatable :: intSwap(:)
 		real*8 :: modDim, numer, denom, K0VMag
+		real*8 :: alpha(2)
 		integer :: i1, i2, i3, i4, dynCopy
 		
 		if(intVecSize .gt. 0) then
@@ -1037,6 +1038,7 @@ module AStrO_commandFunctions
 			intSwap(:) = internalDisp(:)
 			internalDisp(:) = r_0
 		endif
+		
 		swapVec(:) = nodeDisp(:)
 		nodeDisp(:) = r_0
 		
@@ -1045,69 +1047,30 @@ module AStrO_commandFunctions
 		
 		call getElasticSolnLoad(1)
 		
-		! elasticLoad(:) = r_0
-		! if(intVecSize .gt. 0) then
-		    ! intElasticLoad(:) = r_0
-		! endif
-		! call getElasticAppliedLoad(loadTime)
-		! appLd(:) = elasticLoad(:)
-		
 		write(lfUnit,*) 'Beginning getBucklingLoadFactors'
 		
 		do i1 = 1, numFact
-		    delDisp(:) = r_0
-			K0VMag = r_0
-			do i2 = 1, elMatDim
+		    numer = r_0
+		    do i2 = 1, elMatDim
 			    do i3 = elMatRange(i2-1)+1, elMatRange(i2)
 				    i4 = elMatCols(i3)
-					delDisp(i2) = delDisp(i2) + elasticMat(i3)*eigenModes(i4,i1)
+					numer = numer + eigenModes(i2,i1)*elasticMat(i3)*eigenModes(i4,i1)
 				enddo
-				K0VMag = K0VMag + delDisp(i2)*delDisp(i2)
 			enddo
-			K0VMag = sqrt(K0VMag)
-			denom = K0VMag - eigenVals(i1)
-		    ! delDisp(:) = 0.01d0*modDim*eigenModes(:,i1)
-		    ! nodeDisp(:) = nodeDisp(:) + delDisp(:)
-			! elasticLoad(:) = r_0
-			! if(intVecSize .gt. 0) then
-			    ! intEMd(:) = r_0
-				! intRuk(:) = r_0
-				! call updateInternalSoln(eigenModes(:,i1),elMatDim,intEMd,intRuk,intVecSize)
-				! intDelDisp(:) = 0.01d0*modDim*intEMd(:)
-				! internalDisp(:) = internalDisp(:) + intDelDisp(:)
-		        ! intElasticLoad(:) = r_0
-		    ! endif
-			! call getElasticSolnLoad(0)
-			! Ruk(:) = -elasticLoad(:)
-			! nodeDisp(:) = nodeDisp(:) - delDisp(:)
-		    ! numer = r_0
-			! denom = r_0
-			! do i2 = 1, elMatDim
-			    ! numer = numer + Ruk(i2)*delDisp(i2)
-				! denom = denom + (Ruk(i2) - appLd(i2))*nodeDisp(i2)
-			! enddo
-			! if(intVecSize .gt. 0) then
-			    ! intRuk(:) = -intElasticLoad(:)
-				! internalDisp(:) = internalDisp(:) - delDisp(:)
-				! do i2 = 1, intVecSize
-				    ! numer = numer + intRuk(i2)*intDelDisp(i2)
-					! denom = denom + intRuk(i2)*internalDisp(i2)
-				! enddo
-			! endif
+			denom = numer - eigenVals(i1)
 			if(abs(denom) .gt. r_0) then
-			    bFact(i1) = K0VMag/denom
+			    bFact(i1) = numer/denom
 			else
 			    bFact(i1) = 1e+100_8
 			endif
 		enddo
 		
-		nodeDisp(:) = swapVec(:)
-		
 		dynamic = dynCopy
 
-		if(intVecSize .gt. 0) then
+        nodeDisp(:) = swapVec(:)
+        if(intVecSize .gt. 0) then
 		    internalDisp(:) = intSwap(:)
-		    deallocate(intSwap)
+            deallocate(intSwap)
 		endif
 		
 	end subroutine getBucklingLoadFactors

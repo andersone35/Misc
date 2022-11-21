@@ -1,18 +1,13 @@
 *readModelInput:
     fileName: examples/shellBeam/shellBeamModelInput.yaml
 
-*readDesignVarInput:
-    fileName: examples/shellBeam/shellBeamDVarInput.yaml
-	
-*readObjectiveInput:
-    fileName: examples/shellBeam/shellBeamObjInput.yaml
-
 *solve:
     elastic: yes
 	thermal: no
     nonLinearGeom: no
 	dynamic: no
 	solverMethod: direct
+	staticLoadTime: 1.5
 	
 *modalAnalysis:
     type: buckling

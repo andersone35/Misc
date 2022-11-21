@@ -256,6 +256,9 @@ program AStrO_runJob
 					call getSparseEigenModes(eigenModes,eigenVals,numEigModes,elMatDim,elasticMat,elMatCols,elMatRange,elMatSize, &
 						diagMassMat,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCDim,elMPCSize)
 				else
+				    call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
+						 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+					call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
 				    call getEigModesLDL(eigenModes,eigenVals,numEigModes,elMatDim,elMatLT,elMatLTRange,elMatLTSize,diagMassMat)
 				endif
                 if(modalType .eq. 0) then
