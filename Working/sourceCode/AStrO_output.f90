@@ -664,7 +664,13 @@ module AStrO_output
 		    write(900,*) '# mode number, eigenvalue, natural frequency'
 		endif
 		do i1 = 1, numEigModes
-			write(900,*) '    - [', i1, ', ', eigenVals(i1), ', ', eigenFactors(i1), ']'
+		    write(intStr,'(I0)') i1
+			intStr = adjustl(intStr)
+			write(fltStr(1:18),'(G18.12)') eigenVals(i1)
+			fltStr(19:20) = ', '
+			write(fltStr(21:38),'(G18.12)') eigenFactors(i1)
+			writeLine = '    -[' // trim(intStr) // ', ' // fltStr(1:38) // ']'
+			write(900,*) writeLine
 		enddo
 		
 		if(writeModes .eq. 1) then

@@ -1,0 +1,11 @@
+*readModelInput:
+    fileName: examples/shellBeam/shellBeamModelInput.yaml
+	
+*modalAnalysis:
+    type: frequency
+	numModes: 10
+	solverMethod: direct
+
+*writeModalResults:
+    fileName: examples/shellBeam/out/shellBeamFrequencyRes.yaml
+	writeModes: yes

@@ -7,3 +7,4 @@ tip deflection for (Fz = 2) on tip = FL^3/3EI = 8
 moment for 45 degree arc deflection = EIw'' = 6.54498469
 tip deflection for arc moment = [-0.99684, 0.0, 3.729232]
 critical buckling load in x compression = pi^2EI/4L^2 = 2.056176
+1st mode natural frequency, unloaded = (0.56/L^2)(EI/m)^0.5 = 0.16165804304147693 Hz

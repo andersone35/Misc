@@ -186,7 +186,7 @@ program AStrO_runJob
                         elseif(fileLine(i2-18:i2) .eq. 'solverMaxBandwidth:') then
 						    read(fileLine(i2+1:i2+64),*,err=190) solverMaxBW
 							goto 192
-190                         write(lfUnit,*) 'Error: invalid input for solverBlockDim in line:'
+190                         write(lfUnit,*) 'Error: invalid input for solverMaxBandwidth in line:'
                             write(lfUnit,*) fileLine
 192							i1 = i1
                         endif
@@ -202,10 +202,22 @@ program AStrO_runJob
                 call solve()
 114             numNodes = numNodes
             elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
-			    if(.not. allocated(currentRank)) then
-				    call analysisPrep()
+				solverMeth = 'direct'
+				solverBlockDim = numNodes
+				if(solverBlockDim .lt. 4) then
+				    solverBlockdim = 4
 				endif
-                modalType = 0 !! 0 = buckling, 1 = vibration
+                nnd2 = numNodes*numNodes
+                solverMaxBW = 1
+                bw3 = 1
+                do while(bw3 .lt. nnd2)
+                    solverMaxBW = solverMaxBW + 1
+                    bw3 = solverMaxBW*solverMaxBW*solverMaxBW
+                enddo
+				if(solverMaxBW .lt. 6) then
+				    solverMaxBW = 6
+				endif
+                modalType = 0 !! 0 = buckling, 1 = frequency
                 numEigModes = 10
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')
@@ -217,12 +229,28 @@ program AStrO_runJob
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)
                             i1 = index(fileLine,'*')
                         elseif(fileLine(i2-4:i2) .eq. 'type:') then
-                            i3 = index(fileLine,'vibration')
+                            i3 = index(fileLine,'frequency')
                             if(i3 .gt. 0) then
                                 modalType = 1
                             endif
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)
                             i1 = index(fileLine,'*')
+						elseif(fileLine(i2-12:i2) .eq. 'solverMethod:') then
+						    read(fileLine(i2+1:i2+64),*) solverMeth
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+                            i1 = index(fileLine,'*')
+						elseif(fileLine(i2-14:i2) .eq. 'solverBlockDim:') then
+						    read(fileLine(i2+1:i2+64),*,err=245) solverBlockDim
+							goto 247
+245                         write(lfUnit,*) 'Error: invalid input for solverBlockDim in line:'
+                            write(lfUnit,*) fileLine
+247							i1 = i1
+                        elseif(fileLine(i2-18:i2) .eq. 'solverMaxBandwidth:') then
+						    read(fileLine(i2+1:i2+64),*,err=251) solverMaxBW
+							goto 253
+251                         write(lfUnit,*) 'Error: invalid input for solverMaxBandwidth in line:'
+                            write(lfUnit,*) fileLine
+253							i1 = i1
                         else
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)
                             i1 = index(fileLine,'*')
@@ -232,6 +260,13 @@ program AStrO_runJob
                         i1 = index(fileLine,'*')
                     endif
                 enddo
+				if(solverMeth .eq. 'direct') then
+				     solverBlockDim = numNodes
+					 solverMaxBW = 6*numNodes
+				endif
+				if(.not. allocated(currentRank)) then
+				    call analysisPrep()
+				endif
                 allocate(eigenModes(elMatDim,numEigModes))
                 allocate(eigenVals(numEigModes))
                 allocate(eigenFactors(numEigModes))
@@ -243,12 +278,10 @@ program AStrO_runJob
                 i3 = dynamic
                 dynamic = 0
                 call getElasticSolnLoad(1)
+				call scaleElasticMPC()
                 dynamic = i3
                 if(modalType .eq. 1) then
                     call getDiagMassMat()
-                    do i3 = 1, elMatDim
-                        diagMassMat(i3) = r_1/diagMassMat(i3)
-                    enddo
                 else
                     diagMassMat(:) = r_1
                 endif

@@ -2553,6 +2553,12 @@
  			else
  			    thisMass = bMass
  			endif
+ 			!! --------
+ 			write(lfUnit,*) 'mass matrix:'
+ 			do i1 = 1, 6
+ 			    write(lfUnit,*) thisMass(i1,:)
+ 			enddo
+ 			!! --------
  			iNAM(:,:) = c_0
  			do i1 = 1, 6
  				do i2 = 1, numNds
@@ -2580,7 +2586,7 @@
  					call c_getInstDof(instDofMat,disp,globNds,statInOri,orient,numNds,dofTable,i4,0)
  					do i5 = 1, 6
  					    do i6 = 1, numNds
- 						    delU(i5) = delU(i5) + instDofMat(i5,i2)*Nvec(i6)
+ 						    delU(i5) = delU(i5) + instDofMat(i5,i6)*Nvec(i6)
  						enddo
  					enddo
  					if(buildMat .eq. 1) then

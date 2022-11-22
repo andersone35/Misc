@@ -2580,7 +2580,7 @@ module AStrO_r_elementEqns
 					call r_getInstDof(instDofMat,disp,globNds,statInOri,orient,numNds,dofTable,i4,0)
 					do i5 = 1, 6
 					    do i6 = 1, numNds
-						    delU(i5) = delU(i5) + instDofMat(i5,i2)*Nvec(i6)
+						    delU(i5) = delU(i5) + instDofMat(i5,i6)*Nvec(i6)
 						enddo
 					enddo
 					if(buildMat .eq. 1) then

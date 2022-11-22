@@ -57,25 +57,30 @@ sections:
       elementSet: allEls
 materials:
     - name: myMat
+      density: 1.0
       elastic:
           E: [1000000, 1000000, 1000000]
           nu: [0.0, 0.0, 0.0]
           G: [500000, 500000, 500000]
 constraints:
-    matrix:
-        - [1, root, 1, 1.0]
-        - [2, root, 2, 1.0]
-        - [3, root, 3, 1.0]
-        - [4, root, 4, 1.0]
-        - [5, root, 5, 1.0]
-        - [6, root, 6, 1.0]
-    rhs:
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
-        - 0.0
+    - terms:
+          - [root, 1, 1.0]
+      rhs: 0.0
+    - terms:
+          - [root, 2, 1.0]
+      rhs: 0.0
+    - terms:
+          - [root, 3, 1.0]
+      rhs: 0.0
+    - terms:
+          - [root, 4, 1.0]
+      rhs: 0.0
+    - terms:
+          - [root, 5, 1.0]
+      rhs: 0.0
+    - terms:
+          - [root, 6, 1.0]
+      rhs: 0.0
 loads:
    # arc deflection
     - type: nodal
@@ -85,7 +90,7 @@ loads:
     - type: nodal
       activeTime: [1.0, 2.0]
       setLoads:
-          - [tip, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          - [tip, -0.514, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 initialState:
     displacement:
         - [tip, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

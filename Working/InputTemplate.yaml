@@ -41,8 +41,12 @@ sections:
           I: [I2,I3,I22,I33,I23]
           J:
       ## Or
-          stiffness: [s11,s12,..]
-          mass: [m11,m12...]
+          stiffness:
+              - [i, j, val]
+              - [i, j, val]
+          mass:
+              - [i, j, val]
+              - [i, j, val]
           expLoadCoef: [eL1, ... eL6]
           conductivity: [k1]
           specHeat: 
@@ -55,7 +59,9 @@ materials:
           nu: [nu12,nu13,nu23]
           G: [G12,G13,G23]
           ## Or
-          stiffness: [C11,C12,...]
+          stiffness:
+              - [i, j, val]
+              - [i, j, val]
       thermal:
           conductivity: [k1,k2,k3,k12,k13,k23]
           expansion: [e11,e22,e33,e12,e13,e23]
@@ -82,9 +88,7 @@ constraints:
 
 constraints:
     - terms:
-          - nodeSet:
-            dof:
-            coeff:
+          - [ndSet,dof,coef]
       rhs:
 
 ##
