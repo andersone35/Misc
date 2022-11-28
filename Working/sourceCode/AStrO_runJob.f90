@@ -30,7 +30,13 @@ program AStrO_runJob
     
 	abortJob = 0
     lfUnit = 30
-    open(unit=lfUnit, file='jobLogFile.txt', action='write', status='replace')
+	i1 = index(jobScriptName,'.')
+	if(i1 .gt. 0) then
+	    outputFileName = jobScriptName(1:i1-1) // '_jobLog.out'
+	else
+	    outputFileName = trim(jobScriptName) // '_jobLog.out'
+	endif
+    open(unit=lfUnit, file=outputFileName, action='write', status='replace')
     
     write(lfUnit,*) 'Beginning Job'
     write(lfUnit,*) 'Script name: ', jobScriptName
@@ -59,11 +65,11 @@ program AStrO_runJob
 					!outputFileName = 'modelInputEcho.txt'
 					!call writeModelData(outputFileName)
 				endif
-				! i2 = index(commandString,'*readDesignVarInput')
-				! if(i2 .gt. 0) then
-					! outputFileName = 'dVarInputEcho.txt'
-					! call writeDesignVarData(outputFileName)
-				! endif
+				i2 = index(commandString,'*readDesignVarInput')
+				if(i2 .gt. 0) then
+					outputFileName = 'dVarInputEcho.txt'
+					call writeDesignVarData(outputFileName)
+				endif
 				! i2 = index(commandString,'*readObjectiveInput')
 				! if(i2 .gt. 0) then
 					! outputFileName = 'objectiveEcho.txt'
@@ -202,6 +208,7 @@ program AStrO_runJob
                 call solve()
 114             numNodes = numNodes
             elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
+			    write(lfUnit,*) 'running modal analysis'
 				solverMeth = 'direct'
 				solverBlockDim = numNodes
 				if(solverBlockDim .lt. 4) then
@@ -328,18 +335,23 @@ program AStrO_runJob
                 enddo
                 call setSolnToMode(nodeDisp,elMatDim,setDispMode,scaleFactor)
             elseif(fileLine(i1:i1+13) .eq. '*calcObjective') then
+			    write(lfUnit,*) 'calculating objective'
+				write(*,*) 'calculating objective'
                 call getCompleteObjective()
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+15) .eq. '*calcObjGradient') then
+			    write(lfUnit,*) 'calculating objective gradient'
+				write(*,*) 'calculating objective gradient'
                 call getTotaldLdD()
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+16) .eq. '*writeNodeResults' .or. fileLine(i1:i1+19) .eq. '*writeElementResults') then
-			    write(*,*) 'writing node results'
+			    write(lfUnit,*) 'writing node results'
                 call processWriteNodeEl(8,fileLine,iosVal)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+17) .eq. '*writeModalResults') then
+			    write(lfUnit,*) 'writing modal results'
                 writeModes = 1
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')
@@ -370,9 +382,12 @@ program AStrO_runJob
                 enddo
                 call writeModalResults(outputFileName,writeModes)
             elseif(fileLine(i1:i1+20) .eq. '*writeNodeCoordinates' .or. fileLine(i1:i1+22) .eq. '*writeElementProperties') then
+			    write(lfUnit,*) 'calling ', fileLine(i1:i1+22)
                 call processWriteNdElProps(8,fileLine,iosVal)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+14) .eq. '*writeObjective') then
+			    write(lfUnit,*) 'writing objective results'
+				write(*,*) 'writing objective results'
                 writeGrad = 1
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')

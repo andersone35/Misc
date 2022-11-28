@@ -1,0 +1,8 @@
+ objective:
+     totalValue:   0.199999999998E-03                                                                                            
+     termValues:
+         - value: 0.199999999998E-03
+ objectiveGradient:
+     - [1, -.199999999998E-02]                                                                                                   
+     - [2, -.199999999998E-09]                                                                                                   
+     - [3, 0.199999999985E-04]                                                                                                   

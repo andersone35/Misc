@@ -1310,24 +1310,18 @@ module AStrO_input
 		
 		character(len=128), intent(in) :: inFileName
 		
-		integer, allocatable :: dToEl(:), dToElRange(:)
-		real*8, allocatable :: dToElCoef(:)
-		
 		character(len=256) :: fileLine
 		character(len=64) :: readChar
 		real*8 :: readReal(2)
 		integer :: iosVal
 		integer :: elListLen, ndListLen, readInt(2)
-		integer :: dVarNum, dTei, dTni
+		integer :: dVarNum, coefNum
 		integer :: i1, i2, i3, i4, inserted
 		
 		open(unit=1, file=inFileName, blank='NULL', action='read')
 		
 		numDVar = 0
-		elToDSize = 0
-		ndToDSize = 0
-		elListLen = 0
-		ndListLen = 0
+		coefListSize = 0
 		
 		fileLine(1:15) = '               '
 		
@@ -1340,26 +1334,23 @@ module AStrO_input
 				    numDVar = numDVar + 1
 					read(1,'(A)',iostat=iosVal) fileLine(16:256) 
 					i1 = index(fileLine,':')			
-				elseif(fileLine(i1-10:i1) .eq. 'elementSet:') then
-                    read(fileLine(i1+1:i1+64),*) readChar
-					do i1 = 1, numElSets
-					    if(elSetName(i1) .eq. readChar) then
-						    elListLen = elSetRange(i1) - elSetRange(i1-1)
-							elToDSize = elToDSize + elListLen
-						endif
-					enddo
+				elseif(fileLine(i1-12:i1) .eq. 'coefficients:') then
+				    read(fileLine(i1+1:i1+64),*,err=1339,end=1339) readReal(1)
+					coefListSize = coefListSize + 1
 					read(1,'(A)',iostat=iosVal) fileLine(16:256)
+				    i1 = index(fileLine,':')
+					goto 1342
+1339                read(1,'(A)',iostat=iosVal) fileLine(16:256)
                     i1 = index(fileLine,':')
-				elseif(fileLine(i1-7:i1) .eq. 'nodeSet:') then
-                    read(fileLine(i1+1:i1+64),*) readChar
-					do i1 = 1, numNdSets
-					    if(ndSetName(i1) .eq. readChar) then
-						    ndListLen = ndSetRange(i1) - ndSetRange(i1-1)
-							ndToDSize = ndToDSize + ndListLen
-						endif
+					do while(i1 .eq. 0 .and. iosVal .eq. 0)
+					     i2 = index(fileLine,'-')
+						 if(i2 .gt. 0) then
+						     coefListSize = coefListSize + 1
+						 endif
+						 read(1,'(A)',iostat=iosVal) fileLine(16:256) 
+					     i1 = index(fileLine,':')
 					enddo
-					read(1,'(A)',iostat=iosVal) fileLine(16:256)
-                    i1 = index(fileLine,':')
+1342                i1 = i1
 				else
 				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
 					i1 = index(fileLine,':')
@@ -1378,15 +1369,12 @@ module AStrO_input
 		allocate(dComponent(numDVar))
 		allocate(dLayer(numDVar))
 		allocate(dActTime(2,numDVar))
+		allocate(dElSet(numDVar))
+		allocate(dNdSet(numDVar))
+		allocate(dCoefList(coefListSize))
+		allocate(dCoefListRange(0:numDVar))
 		allocate(dsumTermdD(numDVar))
 		allocate(dtotVoldD(numDVar))
-		allocate(elToD(elToDSize))
-		allocate(elToCoef(elToDSize))
-		allocate(ndToD(ndToDSize))
-		allocate(ndToCoef(ndToDSize))
-		allocate(dToNd(ndToDSize))
-		allocate(dToNdCoef(ndToDSize))
-		allocate(dToNdRange(0:numDVar))
 		
 		r_dVec(:) = r_0
 		c_dVec(:) = c_0
@@ -1396,27 +1384,13 @@ module AStrO_input
 		dActTime(:,:) = r_0
 		dsumTermdD(:) = r_0
 		dtotVoldD(:) = r_0
-		elToD(:) = r_0
-		elToCoef(:) = r_0
-		ndToD(:) = r_0
-		ndToCoef(:) = r_0
-		dToNd(:) = r_0
-		dToNdCoef(:) = r_1
-		dToNdRange(:) = 0
-		
-		allocate(dToEl(elToDSize))
-		allocate(dToElCoef(elToDSize))
-		allocate(dToElRange(0:numDVar))
-		
-		dToEl(:) = 0
-		dToElCoef(:) = r_1
-		dToElRange(:) = 0
+		dCoefList(:) = r_0
+		dCoefListRange(:) = 0
 		
 		rewind(1)
 		
 		dVarNum = 0
-		dTei = 0
-		dTni = 0
+		coefNum = 0
 		
 		read(1,'(A)',iostat=iosVal) fileLine(16:256) 
 		
@@ -1450,77 +1424,32 @@ module AStrO_input
 					read(1,'(A)',iostat=iosVal) fileLine(16:256)
                     i1 = index(fileLine,':')
 				elseif(fileLine(i1-10:i1) .eq. 'elementSet:') then
-                    read(fileLine(i1+1:i1+64),*) readChar
-					do i1 = 1, numElSets
-					    if(elSetName(i1) .eq. readChar) then
-						    do i2 = elSetRange(i1-1)+1, elSetRange(i1)
-							    i3 = elementSets(i2)
-								dTei = dTei + 1
-								elListLen = elListLen + 1
-								dToEl(dTei) = i3
-							enddo
-						endif
-					enddo
-					dToElRange(dVarNum) = dTei
+                    read(fileLine(i1+1:i1+64),*) dElSet(dVarNum)
 					read(1,'(A)',iostat=iosVal) fileLine(16:256)
                     i1 = index(fileLine,':')
 				elseif(fileLine(i1-7:i1) .eq. 'nodeSet:') then
-                    read(fileLine(i1+1:i1+64),*) readChar
-					do i1 = 1, numNdSets
-					    if(ndSetName(i1) .eq. readChar) then
-						    do i2 = ndSetRange(i1-1)+1, ndSetRange(i1)
-							    i3 = nodeSets(i2)
-								dTni = dTni + 1
-								ndListLen = ndListLen + 1
-								dToNd(dTni) = i3
-							enddo
-						endif
-					enddo
-					dToNdRange(dVarNum) = dTni
+                    read(fileLine(i1+1:i1+64),*) dNdSet(dVarNum)
 					read(1,'(A)',iostat=iosVal) fileLine(16:256)
                     i1 = index(fileLine,':')
 				elseif(fileLine(i1-12:i1) .eq. 'coefficients:') then
-				    read(fileLine(i1+1:i1+64),*,end=1166) readReal(1)
-					if(elListLen .gt. 0) then
-					    i2 = dTei - elListLen + 1
-					    dToElCoef(i2:dTei) = readReal(1)
-					elseif(ndListLen .gt. 0) then
-					    i2 = dTni - ndListLen + 1
-						dToNdCoef(i2:dTni) = readReal(1)
-					endif
+                    read(fileLine(i1+1:i1+64),*,err=1440,end=1440) readReal(1)
+					coefNum = coefNum + 1
+					dCoefList(coefNum) = readReal(1)
 					read(1,'(A)',iostat=iosVal) fileLine(16:256)
 				    i1 = index(fileLine,':')
-					goto 1194
-1166                if(elListLen .gt. 0) then
-                        i2 = dTei - elListLen + 1
-						read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						i1 = index(fileLine,':')
-						do while(i1 .eq. 0 .and. iosVal .eq. 0)
-							i3 = index(fileLine,'-')
-							if(i3 .gt. 0) then
-							    read(fileLine(i3+1:i3+64),*) dToElCoef(i2)
-								i2 = i2 + 1
-							endif
-							read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						    i1 = index(fileLine,':')
-						enddo
-					elseif(ndListLen .gt. 0) then
-                        i2 = dTni - ndListLen + 1
-						read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						i1 = index(fileLine,':')
-						do while(i1 .eq. 0 .and. iosVal .eq. 0)
-							i3 = index(fileLine,'-')
-							if(i3 .gt. 0) then
-							    read(fileLine(i3+1:i3+64),*) dToNdCoef(i2)
-								i2 = i2 + 1
-							endif
-							read(1,'(A)',iostat=iosVal) fileLine(16:256)
-						    i1 = index(fileLine,':')
-						enddo
-                    else
-                        read(1,'(A)',iostat=iosVal) fileLine(16:256)					
-					endif
-1194				i1 = index(fileLine,':')
+					goto 1450
+1440                read(1,'(A)',iostat=iosVal) fileLine(16:256)
+                    i1 = index(fileLine,':')
+					do while(i1 .eq. 0 .and. iosVal .eq. 0)
+					     i2 = index(fileLine,'-')
+						 if(i2 .gt. 0) then
+						     coefNum = coefNum + 1
+							 read(fileLine(i2+1:i2+64),*) dCoefList(coefNum)
+						 endif
+						 read(1,'(A)',iostat=iosVal) fileLine(16:256) 
+					     i1 = index(fileLine,':')
+					enddo
+1450                dCoefListRange(dVarNum) = coefNum
                 else
 				    read(1,'(A)',iostat=iosVal) fileLine(16:256)
 					i1 = index(fileLine,':')
@@ -1533,81 +1462,11 @@ module AStrO_input
 		
 		close(1)
 		
-		
-		!! Populate elToD from dToEl
-		elToD(:) = 0
-		elToDRange(:) = 0
-		ndToD(:) = 0
-		ndToDRange(:) = 0
-        	
-		do i1 = 1, elToDSize
-		    i2 = dToEl(i1)
-			if(i2 .gt. 0) then
-			    elToDRange(i2) = elToDRange(i2) + 1
+		do i1 = 1, numDVar
+		    if(dCoefListRange(i1) .eq. 0) then
+			    dCoefListRange(i1) = dCoefListRange(i1-1)
 			endif
 		enddo
-		
-		do i1 = 2, numEls
-		    elToDRange(i1) = elToDRange(i1) + elToDRange(i1-1)
-		enddo
-		
-		do i1 = 1, numDVar
-		    do i2 = dToElRange(i1-1)+1, dToElRange(i1)
-			    i3 = dToEl(i2)
-			    if(i3 .gt. 0) then
-					i4 = elToDRange(i3-1) + 1
-					inserted = 0
-					do while(inserted .eq. 0 .and. i4 .le. elToDRange(i3))
-						if(elToD(i4) .eq. 0) then
-							elToD(i4) = i1
-							elToCoef(i4) = dToElCoef(i2)
-							inserted = 1
-						elseif(elToD(i4) .eq. i1) then
-							inserted = 1
-						endif
-						i4 = i4 + 1
-					enddo
-				endif
-			enddo
-		enddo
-		
-		
-		!! Populate ndToD from dToNd
-		
-		do i1 = 1, ndToDSize
-		    i2 = dToNd(i1)
-			if(i2 .gt. 0) then
-			    ndToDRange(i2) = ndToDRange(i2) + 1
-			endif
-		enddo
-		
-		do i1 = 2, numNodes
-		    ndToDRange(i1) = ndToDRange(i1) + ndToDRange(i1-1)
-		enddo
-		
-		do i1 = 1, numDVar
-		    do i2 = dToNdRange(i1-1)+1, dToNdRange(i1)
-			    i3 = dToNd(i2)
-				if(i3 .gt. 0) then
-					i4 = ndToDRange(i3-1) + 1
-					inserted = 0
-					do while(inserted .eq. 0 .and. i4 .le. ndToDRange(i3))
-						if(ndToD(i4) .eq. 0) then
-							ndToD(i4) = i1
-							ndToCoef(i4) = dToNdCoef(i2)
-							inserted = 1
-						elseif(elToD(i4) .eq. i1) then
-							inserted = 1
-						endif
-						i4 = i4 + 1
-					enddo
-				endif
-			enddo
-		enddo
-		
-		deallocate(dToEl)
-		deallocate(dToElCoef)
-		deallocate(dToElRange)
 		
 	end subroutine readDesignVarInput
 	

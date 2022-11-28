@@ -8,13 +8,191 @@ module AStrO_bookKeeping
 	subroutine getdToElComp()
         implicit none
 
-        integer :: i1, i2, i3, i4, i5, di, nd, inserted
+        integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, di, nd, inserted
 
-        integer, allocatable :: fullMap(:,:)
+        integer, allocatable :: fullMap(:,:), dElSeti(:), dNdSeti(:)
+		
+		!! Build d to el and d to nd tables
+		allocate(dElSeti(numDVar))
+		allocate(dNdSeti(numDVar))
+		allocate(dToElRange(0:numDVar))
+		allocate(dToNdRange(0:numDVar))
+		dElSeti(:) = 0
+		dNdSeti(:) = 0
+		dToElRange(:) = 0
+		dToNdRange(:) = 0
+		
+		do i1 = 1, numDVar
+		    do i2 = 1, numElSets
+			    if(elSetName(i2) .eq. dElSet(i1)) then
+				    i3 = elSetRange(i2) - elSetRange(i2-1)
+					dToElRange(i1) = i3
+					dElSeti(i1) = i2
+				endif
+			enddo
+			do i2 = 1, numNdSets
+			    if(ndSetName(i2) .eq. dNdSet(i1)) then
+				    i3 = ndSetRange(i2) - ndSetRange(i2-1)
+					dToNdRange(i1) = i3
+					dNdSeti(i1) = i2
+				endif
+			enddo
+		enddo
+		
+		do i1 = 2, numDVar
+		    dToElRange(i1) = dToElRange(i1-1) + dToElRange(i1)
+			dToNdRange(i1) = dToNdRange(i1-1) + dToNdRange(i1)
+		enddo
+		
+		elToDSize = dToElRange(numDVar)
+		ndToDSize = dToNdRange(numDVar)
+		
+		allocate(dToEl(elToDSize))
+		allocate(dToElCoef(elToDSize))
+		allocate(elToD(elToDSize))
+		allocate(elToCoef(elToDSize))
+		allocate(dToNd(ndToDSize))
+		allocate(dToNdCoef(ndToDSize))
+		allocate(ndToD(ndToDSize))
+		allocate(ndToCoef(ndToDSize))
+		
+		do i1 = 1, numDVar
+		    i2 = dCoefListRange(i1) - dCoefListRange(i1-1)
+			if(i2 .eq. 0) then
+			    if(dElSeti(i1) .ne. 0) then
+				    i3 = dElSeti(i1)
+					i4 = elSetRange(i3-1) + 1
+					i5 = elSetRange(i3)
+					i6 = dToElRange(i1-1) + 1
+					i7 = dToElRange(i1)
+				    dToEl(i6:i7) = elementSets(i4:i5)
+					dToElCoef(i6:i7) = r_1
+				else
+				    i3 = dNdSeti(i1)
+					i4 = ndSetRange(i3-1) + 1
+					i5 = ndSetRange(i3)
+					i6 = dToNdRange(i1-1) + 1
+					i7 = dToNdRange(i1)
+				    dToNd(i6:i7) = nodeSets(i4:i5)
+					dToNdCoef(i6:i7) = r_1
+				endif
+			elseif(i2 .eq. 1) then
+			    i8 = dCoefListRange(i1)
+			    if(dElSeti(i1) .ne. 0) then
+				    i3 = dElSeti(i1)
+					i4 = elSetRange(i3-1) + 1
+					i5 = elSetRange(i3)
+					i6 = dToElRange(i1-1) + 1
+					i7 = dToElRange(i1)
+				    dToEl(i6:i7) = elementSets(i4:i5)
+					dToElCoef(i6:i7) = dCoefList(i8)
+				else
+				    i3 = dNdSeti(i1)
+					i4 = ndSetRange(i3-1) + 1
+					i5 = ndSetRange(i3)
+					i6 = dToNdRange(i1-1) + 1
+					i7 = dToNdRange(i1)
+				    dToNd(i6:i7) = nodeSets(i4:i5)
+					dToNdCoef(i6:i7) = dCoefList(i8)
+				endif
+			else
+			    i8 = dCoefListRange(i1-1) + 1
+				i9 = dCoefListRange(i1)
+			    if(dElSeti(i1) .ne. 0) then
+				    i3 = dElSeti(i1)
+					i4 = elSetRange(i3-1) + 1
+					i5 = elSetRange(i3)
+					i6 = dToElRange(i1-1) + 1
+					i7 = dToElRange(i1)
+				    dToEl(i6:i7) = elementSets(i4:i5)
+					dToElCoef(i6:i7) = dCoefList(i8:i9)
+				else
+				    i3 = dNdSeti(i1)
+					i4 = ndSetRange(i3-1) + 1
+					i5 = ndSetRange(i3)
+					i6 = dToNdRange(i1-1) + 1
+					i7 = dToNdRange(i1)
+				    dToNd(i6:i7) = nodeSets(i4:i5)
+					dToNdCoef(i6:i7) = dCoefList(i8:i9)
+				endif
+			endif
+		enddo
+		
+		!! Populate elToD from dToEl
+		elToD(:) = 0
+		elToDRange(:) = 0
+		ndToD(:) = 0
+		ndToDRange(:) = 0
+        	
+		do i1 = 1, elToDSize
+		    i2 = dToEl(i1)
+			if(i2 .gt. 0) then
+			    elToDRange(i2) = elToDRange(i2) + 1
+			endif
+		enddo
+		
+		do i1 = 2, numEls
+		    elToDRange(i1) = elToDRange(i1) + elToDRange(i1-1)
+		enddo
+		
+		do i1 = 1, numDVar
+		    do i2 = dToElRange(i1-1)+1, dToElRange(i1)
+			    i3 = dToEl(i2)
+			    if(i3 .gt. 0) then
+					i4 = elToDRange(i3-1) + 1
+					inserted = 0
+					do while(inserted .eq. 0 .and. i4 .le. elToDRange(i3))
+						if(elToD(i4) .eq. 0) then
+							elToD(i4) = i1
+							elToCoef(i4) = dToElCoef(i2)
+							inserted = 1
+						elseif(elToD(i4) .eq. i1) then
+							inserted = 1
+						endif
+						i4 = i4 + 1
+					enddo
+				endif
+			enddo
+		enddo
+		
+		
+		!! Populate ndToD from dToNd
+		
+		do i1 = 1, ndToDSize
+		    i2 = dToNd(i1)
+			if(i2 .gt. 0) then
+			    ndToDRange(i2) = ndToDRange(i2) + 1
+			endif
+		enddo
+		
+		do i1 = 2, numNodes
+		    ndToDRange(i1) = ndToDRange(i1) + ndToDRange(i1-1)
+		enddo
+		
+		do i1 = 1, numDVar
+		    do i2 = dToNdRange(i1-1)+1, dToNdRange(i1)
+			    i3 = dToNd(i2)
+				if(i3 .gt. 0) then
+					i4 = ndToDRange(i3-1) + 1
+					inserted = 0
+					do while(inserted .eq. 0 .and. i4 .le. ndToDRange(i3))
+						if(ndToD(i4) .eq. 0) then
+							ndToD(i4) = i1
+							ndToCoef(i4) = dToNdCoef(i2)
+							inserted = 1
+						elseif(elToD(i4) .eq. i1) then
+							inserted = 1
+						endif
+						i4 = i4 + 1
+					enddo
+				endif
+			enddo
+		enddo
+		
+		!! Build comprehensive D to El tables
 
         allocate(dToElCRange(0:numDVar))
 		allocate(elToDCRange(0:numEls))
-
         dToElCRange(:) = 0
 
         allocate(fullMap(numEls,100))
@@ -95,6 +273,7 @@ module AStrO_bookKeeping
             enddo
         enddo
 		
+		elToDComp(:) = 0
 		elToDCRange(:) = 0
 		do i1 = 1, numDVar
 		    do i2 = dToElCRange(i1-1) + 1, dToElCRange(i1)
@@ -124,6 +303,8 @@ module AStrO_bookKeeping
 			enddo
 		enddo
 
+        deallocate(dElSeti)
+		deallocate(dNdSeti)
         deallocate(fullMap)
 
         return
@@ -1176,8 +1357,15 @@ module AStrO_bookKeeping
 			deallocate(dComponent)
 			deallocate(dLayer)
 			deallocate(dActTime)
+			deallocate(dElSet)
+			deallocate(dNdSet)
+			deallocate(dCoefList)
+			deallocate(dCoefListRange)
 			deallocate(dsumTermdD)
 			deallocate(dtotVoldD)
+			deallocate(dToEl)
+			deallocate(dToElCoef)
+			deallocate(dToElRange)
 			deallocate(elToD)
 			deallocate(elToCoef)
 			deallocate(ndToD)

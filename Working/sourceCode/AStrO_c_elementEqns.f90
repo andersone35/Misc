@@ -344,6 +344,8 @@
  		eType = elementType(elNum)
  		
  		dofTable(:,:) = 0
+ 		intPts(:,:) = c_0
+ 		ipWt(:) = c_0
  		if(eType .eq. 4) then
  		    numNds = 4
  			dofPerNd = 3
@@ -405,10 +407,6 @@
  			intPts(:,2) = c_1rt3*(/c_1,-c_1,c_0/)
  			intPts(:,3) = c_1rt3*(/-c_1,c_1,c_0/)
  			intPts(:,4) = c_1rt3*(/c_1,c_1,c_0/)
- 			!dofTable(:,25) = (/3,7/)
- 			!dofTable(:,26) = (/3,8/)
- 			!dofTable(:,27) = (/3,9/)
- 			!dofTable(:,28) = (/3,10/)
  			dofTable(:,25) = (/1,5/)
  			dofTable(:,26) = (/1,6/)
  			dofTable(:,27) = (/2,5/)
@@ -537,8 +535,8 @@
  				pAcc(i2,i1) = c_1*prevAcc(i4)
  				pVel(i2,i1) = c_1*prevVel(i4)
  				disp(i2,i1) = c_1*nodeDisp(i4)
- 				vel(i2,i1) = c_1*nodeAcc(i4)
- 				acc(i2,i1) = c_1*nodeVel(i4)
+ 				acc(i2,i1) = c_1*nodeAcc(i4)
+ 				vel(i2,i1) = c_1*nodeVel(i4)
  			enddo
  		enddo
  		
@@ -549,8 +547,8 @@
  			    i4 = i2 + i3
  				i5 = dofTable(1,i4)
  				i6 = dofTable(2,i4)
- 				disp(i5,i6) = internalDisp(i1+i3)
- 				pDisp(i5,i6) = prevIntDisp(i1+i3)
+ 				disp(i5,i6) = c_1*internalDisp(i1+i3)
+ 				pDisp(i5,i6) = c_1*prevIntDisp(i1+i3)
  			enddo
  		endif
  		
@@ -647,12 +645,20 @@
  					enddo
  				enddo
  			enddo
- 			strain(1) = uxL(1,1) + c_p5*(ux(1,1)*ux(1,1) + ux(2,1)*ux(2,1) + ux(3,1)*ux(3,1))
- 			strain(2) = uxL(2,2) + c_p5*(ux(1,2)*ux(1,2) + ux(2,2)*ux(2,2) + ux(3,2)*ux(3,2))
- 			strain(3) = uxL(3,3) + c_p5*(ux(1,3)*ux(1,3) + ux(2,3)*ux(2,3) + ux(3,3)*ux(3,3))
- 			strain(4) = uxL(1,2) + uxL(2,1) + ux(1,1)*ux(1,2) + ux(2,1)*ux(2,2) + ux(3,1)*ux(3,2)
- 			strain(5) = uxL(1,3) + uxL(3,1) + ux(1,1)*ux(1,3) + ux(2,1)*ux(2,3) + ux(3,1)*ux(3,3)
- 			strain(6) = uxL(2,3) + uxL(3,2) + ux(1,3)*ux(1,2) + ux(2,3)*ux(2,2) + ux(3,3)*ux(3,2)
+ 			strain(1) = uxL(1,1)
+ 			strain(2) = uxL(2,2)
+ 			strain(3) = uxL(3,3)
+ 			strain(4) = uxL(1,2) + uxL(2,1)
+ 			strain(5) = uxL(1,3) + uxL(3,1)
+ 			strain(6) = uxL(2,3) + uxL(3,2)
+ 			if(nLGeom .ne. 0) then
+ 				strain(1) = strain(1) + c_p5*(ux(1,1)*ux(1,1) + ux(2,1)*ux(2,1) + ux(3,1)*ux(3,1))
+ 				strain(2) = strain(2) + c_p5*(ux(1,2)*ux(1,2) + ux(2,2)*ux(2,2) + ux(3,2)*ux(3,2))
+ 				strain(3) = strain(3) + c_p5*(ux(1,3)*ux(1,3) + ux(2,3)*ux(2,3) + ux(3,3)*ux(3,3))
+ 				strain(4) = strain(4) + ux(1,1)*ux(1,2) + ux(2,1)*ux(2,2) + ux(3,1)*ux(3,2)
+ 				strain(5) = strain(5) + ux(1,1)*ux(1,3) + ux(2,1)*ux(2,3) + ux(3,1)*ux(3,3)
+ 				strain(6) = strain(6) + ux(1,3)*ux(1,2) + ux(2,3)*ux(2,2) + ux(3,3)*ux(3,2)
+ 			endif
  		elseif(dv*dv2 .eq. 0) then
  		    if(dv .ne. 0) then
  			    var = dofTable(1,dv)
@@ -661,24 +667,34 @@
  			    var = dofTable(1,dv2)
  				nd = dofTable(2,dv2)
  			endif
- 			strain(1) = orient(1,var)*Nx(nd,1) + Nx(nd,1)*ux(var,1)
- 			strain(2) = orient(2,var)*Nx(nd,2) + Nx(nd,2)*ux(var,2)
- 			strain(3) = orient(3,var)*Nx(nd,3) + Nx(nd,3)*ux(var,3)
- 			strain(4) = orient(1,var)*Nx(nd,2) + orient(2,var)*Nx(nd,1) + Nx(nd,1)*ux(var,2) + Nx(nd,2)*ux(var,1)
- 			strain(5) = orient(1,var)*Nx(nd,3) + orient(3,var)*Nx(nd,1) + Nx(nd,1)*ux(var,3) + Nx(nd,3)*ux(var,1)
- 			strain(6) = orient(2,var)*Nx(nd,3) + orient(3,var)*Nx(nd,2) + Nx(nd,2)*ux(var,3) + Nx(nd,3)*ux(var,2)
+ 			strain(1) = orient(1,var)*Nx(nd,1)
+ 			strain(2) = orient(2,var)*Nx(nd,2)
+ 			strain(3) = orient(3,var)*Nx(nd,3)
+ 			strain(4) = orient(1,var)*Nx(nd,2) + orient(2,var)*Nx(nd,1)
+ 			strain(5) = orient(1,var)*Nx(nd,3) + orient(3,var)*Nx(nd,1)
+ 			strain(6) = orient(2,var)*Nx(nd,3) + orient(3,var)*Nx(nd,2)
+ 			if(nLGeom .ne. 0) then
+ 				strain(1) = strain(1) + Nx(nd,1)*ux(var,1)
+ 				strain(2) = strain(2) + Nx(nd,2)*ux(var,2)
+ 				strain(3) = strain(3) + Nx(nd,3)*ux(var,3)
+ 				strain(4) = strain(4) + Nx(nd,1)*ux(var,2) + Nx(nd,2)*ux(var,1)
+ 				strain(5) = strain(5) + Nx(nd,1)*ux(var,3) + Nx(nd,3)*ux(var,1)
+ 				strain(6) = strain(6) + Nx(nd,2)*ux(var,3) + Nx(nd,3)*ux(var,2)
+ 			endif
  		else
- 		    var = dofTable(1,dv)
- 			nd = dofTable(2,dv)
- 			var2 = dofTable(1,dv2)
- 			nd2 = dofTable(2,dv2)
- 			if(var .eq. var2) then
- 			    strain(1) = Nx(nd,1)*Nx(nd2,1)
- 				strain(2) = Nx(nd,2)*Nx(nd2,2)
- 				strain(3) = Nx(nd,3)*Nx(nd2,3)
- 				strain(4) = Nx(nd,1)*Nx(nd2,2) + Nx(nd2,1)*Nx(nd,2)
- 				strain(5) = Nx(nd,1)*Nx(nd2,3) + Nx(nd2,1)*Nx(nd,3)
- 				strain(6) = Nx(nd,2)*Nx(nd2,3) + Nx(nd2,2)*Nx(nd,3)
+ 		    if(nLGeom .ne. 0) then
+ 				var = dofTable(1,dv)
+ 				nd = dofTable(2,dv)
+ 				var2 = dofTable(1,dv2)
+ 				nd2 = dofTable(2,dv2)
+ 				if(var .eq. var2) then
+ 					strain(1) = Nx(nd,1)*Nx(nd2,1)
+ 					strain(2) = Nx(nd,2)*Nx(nd2,2)
+ 					strain(3) = Nx(nd,3)*Nx(nd2,3)
+ 					strain(4) = Nx(nd,1)*Nx(nd2,2) + Nx(nd2,1)*Nx(nd,2)
+ 					strain(5) = Nx(nd,1)*Nx(nd2,3) + Nx(nd2,1)*Nx(nd,3)
+ 					strain(6) = Nx(nd,2)*Nx(nd2,3) + Nx(nd2,2)*Nx(nd,3)
+ 				endif
  			endif
  		endif
  
@@ -731,48 +747,72 @@
  		
  		instOri(:,:) = c_0
  		
- 		elRot(:) = c_0
- 		do i1 = 1, numNds
- 		    elRot(:) = elRot(:) + disp(4:6,i1)
- 		enddo
- 		elRot(:) = (c_1/numNds)*elRot(:)
- 		
- 		call c_rotateAlpha(instOri(:,1:3),locOri,elRot,0,0)
- 		if(static .eq. 0) then
+ 		if(nLGeom .eq. 0) then
+ 		    instOri(:,1:3) = locOri(:,:)
+ 			
+ 			do i1 = 1, numNds
+ 			    stCol = 48*i1
+ 				instOri(:,stCol+1:stCol+3) = locOri(:,:)
+ 			enddo
+ 			
  			do i1 = 1, 3
- 				call c_rotateAlpha(tempAl,locOri,elRot,i1,0)
- 				stCol = 12*i1
- 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 				stCol = 3*i1
- 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 				do i2 = i1, 3
- 					call c_rotateAlpha(tempAl,locOri,elRot,i1,i2)
- 					stCol = 12*i1 + 3*i2
+ 			    elRot(:) = c_0
+ 			    call c_rotateAlpha(tempAl,locOri,elRot,i1,0)
+ 				do i2 = 1, numNds
+ 				    stCol = 48*i2 + 12*i1
  					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 					stCol = 3*i1 + 12*i2
+ 					stCol = 48*i2 + 3*i1
  					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					stCol = 48*i2
+ 				    instOri(:,stCol+1:stCol+3) = instOri(:,stCol+1:stCol+3) + tempAl(:,:)*disp(i1+3,i2)
+ 				enddo
+ 			enddo
+ 		else
+ 			elRot(:) = c_0
+ 			do i1 = 1, numNds
+ 				elRot(:) = elRot(:) + disp(4:6,i1)
+ 			enddo
+ 			elRot(:) = (c_1/numNds)*elRot(:)
+ 			
+ 			call c_rotateAlpha(instOri(:,1:3),locOri,elRot,0,0)
+ 			if(static .eq. 0) then
+ 				do i1 = 1, 3
+ 					call c_rotateAlpha(tempAl,locOri,elRot,i1,0)
+ 					stCol = 12*i1
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					stCol = 3*i1
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					do i2 = i1, 3
+ 						call c_rotateAlpha(tempAl,locOri,elRot,i1,i2)
+ 						stCol = 12*i1 + 3*i2
+ 						instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 						stCol = 3*i1 + 12*i2
+ 						instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					enddo
+ 				enddo
+ 			endif
+ 			
+ 			do i3 = 1, numNds
+ 				stCol = 48*i3
+ 				call c_rotateAlpha(instOri(:,stCol+1:stCol+3),locOri,disp(4:6,i3),0,0)
+ 				do i1 = 1, 3
+ 					call c_rotateAlpha(tempAl,locOri,disp(4:6,i3),i1,0)
+ 					stCol = 48*i3 + 12*i1
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					stCol = 48*i3 + 3*i1
+ 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					do i2 = i1, 3
+ 						call c_rotateAlpha(tempAl,locOri,disp(4:6,i3),i1,i2)
+ 						stCol = 48*i3 + 12*i1 + 3*i2
+ 						instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 						stCol = 48*i3 + 3*i1 + 12*i2
+ 						instOri(:,stCol+1:stCol+3) = tempAl(:,:)
+ 					enddo
  				enddo
  			enddo
  		endif
  		
- 		do i3 = 1, numNds
- 		    stCol = 48*i3
- 			call c_rotateAlpha(instOri(:,stCol+1:stCol+3),locOri,disp(4:6,i3),0,0)
- 			do i1 = 1, 3
- 				call c_rotateAlpha(tempAl,locOri,disp(4:6,i3),i1,0)
- 				stCol = 48*i3 + 12*i1
- 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 				stCol = 48*i3 + 3*i1
- 				instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 				do i2 = i1, 3
- 					call c_rotateAlpha(tempAl,locOri,disp(4:6,i3),i1,i2)
- 					stCol = 48*i3 + 12*i1 + 3*i2
- 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 					stCol = 48*i3 + 3*i1 + 12*i2
- 					instOri(:,stCol+1:stCol+3) = tempAl(:,:)
- 				enddo
- 			enddo
- 		enddo
+ 
  		
  	end subroutine c_getInstOrient
  	
@@ -954,7 +994,7 @@
  		    i2 = dofTable(1,i1)
  			i3 = dofTable(2,i1)
  			i4 = nDofIndex(i2,elementList(i3,elNum))
- 			disp(i2) = disp(i2) + nodeDisp(i4)*Nvec(i3)
+ 			disp(i2) = disp(i2) + c_1*nodeDisp(i4)*Nvec(i3)
  			ddispdU(i2,i1) = ddispdU(i2,i1) + Nvec(i3)
  		enddo
  	
@@ -2353,7 +2393,7 @@
  						    Ruk(i4) = Ruk(i4) + beamFrcMom(i5)*beamDef(i5)
  						enddo
  					endif
- 					if(buildMat .eq. 1) then
+ 					if(buildMat .eq. 1 .and. nLGeom .ne. 0) then
  					    do i10 = i4, i2
  							call c_getInstDof(instDofMat,disp,globNds,instOri,orient,numNds,dofTable,i4,i10)
  							ptRot(:) = c_0
@@ -2450,14 +2490,16 @@
  					do i4 = 1, 6
  					    Ruk(i3) = Ruk(i3) + stress(i4)*strain(i4)
  					enddo
- 					do i5 = i3, i2
- 					    call c_getNLStrain(strain,ux,Nx,orient,i3,i5,dofTable)
- 						strain = (detJ*ipWt(i1))*strain
- 						do i4 = 1, 6
- 							dRdU(i3,i5) = dRdU(i3,i5) + stress(i4)*strain(i4)
+ 					if(buildMat .eq. 1 .and. nLGeom .ne. 0) then
+ 						do i5 = i3, i2
+ 							call c_getNLStrain(strain,ux,Nx,orient,i3,i5,dofTable)
+ 							strain = (detJ*ipWt(i1))*strain
+ 							do i4 = 1, 6
+ 								dRdU(i3,i5) = dRdU(i3,i5) + stress(i4)*strain(i4)
+ 							enddo
+ 							dRdU(i5,i3) = dRdU(i3,i5)
  						enddo
- 						dRdU(i5,i3) = dRdU(i3,i5)
- 					enddo
+ 					endif
  				enddo
  			endif
  			if(buildMat .eq. 1) then
@@ -2553,12 +2595,6 @@
  			else
  			    thisMass = bMass
  			endif
- 			!! --------
- 			write(lfUnit,*) 'mass matrix:'
- 			do i1 = 1, 6
- 			    write(lfUnit,*) thisMass(i1,:)
- 			enddo
- 			!! --------
  			iNAM(:,:) = c_0
  			do i1 = 1, 6
  				do i2 = 1, numNds

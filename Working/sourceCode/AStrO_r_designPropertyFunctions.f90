@@ -943,7 +943,7 @@ module AStrO_r_designPropertyFunctions
 		
 		integer :: i1, i2, i3, i4, i5
 		
-		nodes(:,:) = r_1
+		nodes(:,:) = r_0
 		do i1 = 1,8
 		    i2 = elementList(i1,element)
 			if(i2 .gt. 0) then
@@ -969,7 +969,7 @@ module AStrO_r_designPropertyFunctions
 		
 		integer :: i1, i2, i3, i4, i5, i6, check1, check2, nDof
 		
-		ndLd = r_0
+		ndLd(:) = r_0
 		do i2 = ndToDRange(node-1)+1, ndToDRange(node)
 			i3 = ndToD(i2)
 			call r_greater(check1,time,r_1*dActTime(1,i3))

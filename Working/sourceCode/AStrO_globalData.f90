@@ -65,20 +65,29 @@ module AStrO_globalData
 	integer, allocatable :: dComponent(:)
 	integer, allocatable :: dLayer(:)
 	real*8, allocatable :: dActTime(:,:)
+	character(len=64), allocatable :: dElSet(:)
+	character(len=64), allocatable :: dNdSet(:)
+	real*8, allocatable :: dCoefList(:)
+	integer, allocatable :: dCoefListRange(:)
+	integer :: numDVar, coefListSize
+	
 	integer, allocatable :: elToD(:)
+	integer, allocatable :: dToEl(:)
 	integer, allocatable :: ndToD(:)
 	integer, allocatable :: dToNd(:)
 	integer, allocatable :: elToDComp(:)
 	integer, allocatable :: dToElComp(:)
 	integer, allocatable :: elToDRange(:)
+	integer, allocatable :: dToElRange(:)
 	integer, allocatable :: ndToDRange(:)
 	integer, allocatable :: dToNdRange(:)
 	integer, allocatable :: elToDCRange(:)
 	integer, allocatable :: dToElCRange(:)
 	real*8, allocatable :: elToCoef(:)
+	real*8, allocatable :: dToElCoef(:)
 	real*8, allocatable :: ndToCoef(:)
 	real*8, allocatable :: dToNdCoef(:)
-	integer :: numDVar, elToDSize, ndToDSize, dToElCSize
+	integer :: elToDSize, ndToDSize, dToElCSize
 
 !! Objective input data
 

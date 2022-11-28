@@ -7,4 +7,8 @@ designVariables:
       layer: 1
       component: 1
       elementSet: allEls
-      coefficients: 2.0
+      coefficients: 1.0
+    - category: nodeCoord
+      component: 1
+      nodeSet: tip
+      coefficients: 1.0

@@ -32,6 +32,7 @@ module AStrO_commandFunctions
 		    call readInitialState(fileName)
 		elseif(commandTag(1:19) .eq. '*readDesignVarInput') then
 		    call readDesignVarInput(fileName)
+			call getdToElComp()
 		elseif(commandTag(1:20) .eq. '*readDesignVarValues') then
 		    call readDesignVarValues(fileName)
 		elseif(commandTag(1:19) .eq. '*readObjectiveInput') then
@@ -1047,8 +1048,6 @@ module AStrO_commandFunctions
 		
 		call getElasticSolnLoad(1)
 		
-		write(lfUnit,*) 'Beginning getBucklingLoadFactors'
-		
 		do i1 = 1, numFact
 		    numer = r_0
 		    do i2 = 1, elMatDim
@@ -1117,13 +1116,15 @@ module AStrO_commandFunctions
 				endif
 				call getElasticAppliedLoad(time)
 				elasticLoad(:) = appLdFact*elasticLoad(:)
-			    call getElasticSolnLoad(nLGeom)
-				call getElasticConstraintLoad()
 				if(nLGeom .ne. 0) then
+			        call getElasticSolnLoad(1)
 					call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
 						 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
 					call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
+				else
+				    call getElasticSolnLoad(0)
 				endif
+				call getElasticConstraintLoad()
 				if(intVecSize .gt. 0) then
 				    call updateExternalRHS(elasticLoad,elMatDim,intElasticLoad,intVecSize)
 				endif
@@ -1415,15 +1416,18 @@ module AStrO_commandFunctions
 		integer :: i1, i2, i3, i4, i5, i6, i7, eType, numVecs
 		
 		if(solveElastic .eq. 1) then
-			velAdj(:) = dLdv(:)
-			accAdj(:) = (-r_1/(delT*delT*nMBeta))*(dLda(:) + delT*nMGamma*velAdj(:))
-			
-			dLdu(:) = dLdu(:) - accAdj(:)
-			call getElasticSolnLoad(1)
-			call scaleElasticMPC()
-			call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
-				 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
-			call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
+		    if(dynamic .eq. 1) then
+				velAdj(:) = dLdv(:)
+				accAdj(:) = (-r_1/(delT*delT*nMBeta))*(dLda(:) + delT*nMGamma*velAdj(:))			
+				dLdu(:) = dLdu(:) - accAdj(:)
+			endif
+			if(nLGeom .ne. 0) then
+				call getElasticSolnLoad(1)
+				call scaleElasticMPC()
+				call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
+					 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+				call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
+			endif
 			if(intVecSize .gt. 0) then
 			    call updateExternalRHS(dLdu,elMatDim,intdLdu,intVecSize)
 			endif
@@ -1435,12 +1439,15 @@ module AStrO_commandFunctions
 						elMPCMatRange,elMPCSize,elMPCDim,elMatLT,elMatLTRange,elMatLTSize,dLdu,numVecs,elMatDim)
 			endif
 			if(intVecSize .gt. 0) then
+			    intDispAdj(:) = r_0
 			    call updateInternalSoln(dispAdj,elMatDim,intDispAdj,intdLdu,intVecSize)
 			endif
         endif
 
         if(solveThermal .eq. 1) then
-		    tdotAdj(:) = (-r_1/(delT*nMGamma))*dLdtdot(:)
+		    if(dynamic .eq. 1) then
+		        tdotAdj(:) = (-r_1/(delT*nMGamma))*dLdtdot(:)
+			endif
 			
 			if(solveElastic .eq. 1) then
 			    do i1 = 1, numEls
@@ -1477,7 +1484,9 @@ module AStrO_commandFunctions
 				enddo
 			endif
 			
-			dLdt(:) = dLdt(:) - tdotAdj(:)
+			if(dynamic .eq. 1) then
+			    dLdt(:) = dLdt(:) - tdotAdj(:)
+			endif
 			
 			call getThermalSolnLoad(1)
 			call scaleThermalMPC()
@@ -1675,14 +1684,13 @@ module AStrO_commandFunctions
 		character(len=16) :: lt
 		
 		complex*16 :: Ru(33), dRdU(33,33), ndLd(7)
-		complex*16 :: statRot(3), nnInv, statInOri(3,240), statdrIdrG(3,16)
+		complex*16 :: nnInv, statInOri(3,240)
 		integer :: i1, i2, i3, i4, i5, i6, i7, i8, i9, i10
 		
 	    dRudD(:) = r_0
 		if(intVecSize .gt. 0) then
 	        intdRudD(:) = r_0
 		endif
-		
 		elDepends(:) = 0
 		do i1 = dToElCRange(dVarNum-1)+1, dToElCRange(dVarNum)
 		    i2 = dToElComp(i1)
@@ -1690,7 +1698,6 @@ module AStrO_commandFunctions
 			    elDepends(i2) = 1
 			endif
 		enddo
-		
 		c_dVec(:) = c_1*r_dVec(:)
 		c_dVec(dVarNum) = c_dVec(dVarNum) + compStep
 		
@@ -1703,6 +1710,31 @@ module AStrO_commandFunctions
 	            temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i2)
 			eType = elementType(i2)
 			call c_getInstOrient(statInOri,orient,disp,numNds,1)
+			!! -------------------
+			! if(i2 .eq. 1) then
+			    ! write(lfUnit,*) 'dVarNum: ', dVarNum
+			    ! write(lfUnit,*) 'element ', i2, ' data'
+				! write(lfUnit,*) 'numNds: ', numNds, 'dofPerNd: ', dofPerNd, 'numIntDof: ', numIntDof, 'numIntPts: ', numIntPts
+				! write(lfUnit,*) 'intPts: '
+				! write(lfUnit,*) intPts
+				! write(lfUnit,*) 'ipWt'
+				! write(lfUnit,*) ipWt
+			    ! write(lfUnit,*) 'locNds: '
+				! write(lfUnit,*) locNds
+				! write(lfUnit,*) 'globNds: '
+				! write(lfUnit,*) globNds
+				! write(lfUnit,*) 'orient: '
+				! write(lfUnit,*) orient
+				! write(lfUnit,*) 'ABD: '
+				! write(lfUnit,*) ABD
+				! write(lfUnit,*) 'stExp: '
+				! write(lfUnit,*) stExp
+				! write(lfUnit,*) 'temp: '
+				! write(lfUnit,*) temp
+				! write(lfUnit,*) 'disp: '
+				! write(lfUnit,*) disp
+			! endif
+			!! ----------------------------
 			call c_getElRu(Ru,dRdU,0,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
 				statInOri,den,sMass,bMass)
@@ -1711,7 +1743,7 @@ module AStrO_commandFunctions
 			    i5 = dofTable(1,i4)
 				i6 = elementList(dofTable(2,i4),i2)
 			    i7 = nDofIndex(i5,i6)
-				dRudD(i4) = dRudD(i4) + compStepInv*imag(Ru(i4))
+				dRudD(i7) = dRudD(i7) + compStepInv*imag(Ru(i4))
 			enddo
 			if(numIntDof .gt. 0) then
 			    i3 = numNds*dofPerNd + 1
@@ -1846,6 +1878,8 @@ module AStrO_commandFunctions
 				endif
 			enddo
 		enddo
+		
+		c_dVec(dVarNum) = c_dVec(dVarNum) - compStep
 		
 	end subroutine getdRelasticdD
 	

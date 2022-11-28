@@ -1621,6 +1621,14 @@ module AStrO_output
 		write(122,*) dLayer(:)
 		write(122,*) 'dActTime'
 		write(122,*) dActTime(:,:)
+		write(122,*) 'dElSet'
+		write(122,*) dElSet(:)
+		write(122,*) 'dNdSet'
+		write(122,*) dNdSet(:)
+		write(122,*) 'dCoefList'
+		write(122,*) dCoefList(:)
+		write(122,*) 'dCoefListRange'
+		write(122,*) dCoefListRange(:)
 		write(122,*) 'elToD'
 		write(122,*) elToD(:)
 		write(122,*) 'ndToD'
