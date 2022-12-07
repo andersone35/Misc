@@ -648,6 +648,9 @@ module AStrO_input
 						if(i1 .gt. 0) then
 						    if(fileLine(i1-4:i1) .eq. 'name:') then
 							    matNum = matNum + 1
+								GSet = 0
+					            nuSet = 0
+					            inMaxStress = 0
 								read(fileLine(i1+1:i1+64),*) materialName(matNum)
 								read(1,'(A)',iostat=iosVal) fileLine(16:256)
 							elseif(fileLine(i1-7:i1) .eq. 'density:') then
@@ -670,7 +673,7 @@ module AStrO_input
 									read(fileLine(i2+1:i3-1),*) materialElastic(4:6,matNum)
 								else
 								    read(fileLine(i1+1:i1+64),*) materialElastic(4,matNum)
-									materialElastic(4:6,matNum) = materialElastic(4,matNum)
+									materialElastic(5:6,matNum) = materialElastic(4,matNum)
 								endif
 								read(1,'(A)',iostat=iosVal) fileLine(16:256)
 								nuSet = 1

@@ -997,29 +997,33 @@ module AStrO_commandFunctions
 		
 	end subroutine getModelDimension
 	
-	subroutine setSolnToMode(solnVec,sVdim,modeNum,scaleFact)
+	subroutine setSolnToMode(solnField,modeNum,maxAmp)
 	    implicit none
 		
-		integer, intent(in) :: modeNum, sVdim
-		real*8, intent(in) :: scaleFact
-		real*8, intent(out) :: solnVec(sVdim)
+		character(len=16), intent(in) :: solnField
+		integer, intent(in) :: modeNum
+		real*8, intent(in) :: maxAmp
 		
 		real*8 :: modDim, eVMax, multFact, absVi
 		integer :: i1, i2
 		
-		call getModelDimension(modDim)
-		
 		eVMax = r_0
-		do i1 = 1, sVdim
+		do i1 = 1, elMatDim
 		    absVi = abs(eigenModes(i1,modeNum))
 		    if(absVi .gt. eVMax) then
 			    eVMax = absVi
 			endif
 		enddo
 		
-		multFact = scaleFact*modDim/eVMax
+		multFact = maxAmp/eVMax
 		
-		solnVec(:) = multFact*eigenModes(:,modeNum)
+		if(solnField .eq. 'velocity') then
+		    nodeVel(:) = multFact*eigenModes(:,modeNum)
+		elseif(solnField .eq. 'acceleration') then
+		    nodeAcc(:) = multFact*eigenModes(:,modeNum)
+		else
+		    nodeDisp(:) = multFact*eigenModes(:,modeNum)
+		endif
 		
 	end subroutine setSolnToMode
 	
@@ -1986,7 +1990,7 @@ module AStrO_commandFunctions
 		character(len=32) :: commandTag
 		character(len=128) :: outputFileName, fullFileName
 		
-		character(len=64) :: writeFields(10)
+		character(len=16) :: writeFields(10)
 	    character(len=16) :: extension, stepStr
 		real*8 :: time
 		

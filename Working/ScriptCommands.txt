@@ -37,9 +37,10 @@
     type: buckling
     numModes: 10
 	
-*setDispToMode: X
+*setSolnToMode: X
+    solnField: displacement, velocity, acceleration
     mode:
-    scaleFactor:
+    maxAmplitude:
 
 *calcObjective: X
 	
@@ -94,7 +95,6 @@
     fileName:
 	include:
         - category
-		- subCategory
 		- component
 		- layer
 		- nodeSet

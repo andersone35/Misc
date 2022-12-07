@@ -327,7 +327,7 @@ contains
         do i1 = 1, numCols
 		    col1 = i1 + colSt - 1
 			row1 = i1 + rowSt - 1
-            if(triDiag .eq. 1) then
+            if(triDiag .eq. 1) then  !! Matrix is tri-diagonal
                 maxRow = i1 + 1
                 maxCol = i1 + 2
                 if(maxRow .gt. numRows) then
@@ -336,7 +336,7 @@ contains
                 if(maxCol .gt. numCols) then
                    maxCol = numCols
                 endif
-            elseif(triDiag .eq. 2) then
+            elseif(triDiag .eq. 2) then  !! Matrix is semi-upper triangular
                 maxRow = i1 + 1
                 maxCol = numCols
                 if(maxRow .gt. numRows) then
@@ -642,10 +642,10 @@ contains
         return
     end subroutine h2AhEvals
 
-    subroutine eigenSolve(eVals,eVecs,Amat,ADim,numEVals,sym)
+    subroutine eigenSolve(eVals,eVecs,Amat,ADim,numEVals,triDiag)
         implicit none
 
-        integer, intent(in) :: ADim, numEVals, sym
+        integer, intent(in) :: ADim, numEVals, triDiag
         real*8, intent(out) :: Amat(ADim,ADim), eVals(numEVals), eVecs(Adim,numEVals)
 
         integer :: i1, i2, i3
@@ -658,7 +658,14 @@ contains
         write(*,*) 'Starting E-solve'
 
         h2Ah = Amat
-        call symFactor(h2Ah,hMat,ADim)
+		if(triDiag .eq. 0) then
+            call symFactor(h2Ah,hMat,ADim)
+		else
+		    hMat(:,:) = 0d0
+			do i1 = 1, ADim
+			    hMat(i1,i1) = 1d0
+			enddo
+		endif
 
         matNorm = r_0
         pDiag(:) = r_0
@@ -671,7 +678,7 @@ contains
         enddo
         matNorm = sqrt(matNorm)
 
-        call h2AhEvals(eVals,numEvals,h2Ah,ADim,-matNorm,1e-4*matNorm,1e-12*matNorm,sym)
+        call h2AhEvals(eVals,numEvals,h2Ah,ADim,-matNorm,1e-4*matNorm,1e-12*matNorm,triDiag)
 
         write(*,*) 'got E vals'
 
@@ -680,7 +687,7 @@ contains
             do i2 = 1, ADim
                 matCopy(i2,i2) = matCopy(i2,i2) - eVals(i1) + pDiag(i2)
             enddo
-            call rFactorMat(matCopy,ADim,ADim,1,ADim,1,ADim,sym)
+            call rFactorMat(matCopy,ADim,ADim,1,ADim,1,ADim,triDiag)
             vMag = r_0
             do i2 = 1, ADim
                 h2AhVecs(i2,i1) = sin(r_1*i1*i2)
@@ -694,7 +701,7 @@ contains
             resNorm = r_1
             i2 = 0
             do while(abs(resNorm) .gt. 1e-10 .and. i2 .lt. 50)
-                call solveRFactor(vNext,matCopy,rhs,ADim,ADim,1,ADim,1,ADim,sym)
+                call solveRFactor(vNext,matCopy,rhs,ADim,ADim,1,ADim,1,ADim,triDiag)
                 vMag = r_0
                 do i3 = 1, ADim
                     vMag = vMag + vNext(i3)*vNext(i3)
@@ -733,7 +740,7 @@ contains
 		
 		integer, intent(in) :: numVecs, matDim, ALTSize
 		integer, intent(in) :: ALTRange(0:matDim)
-		real*8, intent(in) :: ALT(ALTSize), Mmat(matDim)
+		real*8, intent(in) :: ALT(ALTSize), Mmat(matDim)  !! Mmat = square root of diagonal mass matrix
 		real*8, intent(out) :: eVecs(matDim,numVecs), eVals(numVecs)
 		
 		real*8, allocatable :: basisVecs(:,:), tempV1(:), tempV2(:), tempV3(:), hAh(:,:), hAhVecs(:,:), hAhVals(:)
@@ -765,7 +772,10 @@ contains
 		    do i2 = 1, matDim
 			    tempV1(i2) = Mmat(i2)*basisVecs(i2,i1-1)
 			enddo
-		    call solveSparseLDLFact(basisVecs(:,i1), tempV1, ALT, ALTSize, ALTRange, matDim, tempV2)
+		    call solveSparseLDLFact(tempV3, tempV1, ALT, ALTSize, ALTRange, matDim, tempV2)
+			do i2 = 1, matDim
+			    basisVecs(i2,i1) = Mmat(i2)*tempV3(i2)
+			enddo
 			do i2 = 1, i1-1
 			    dp = r_0
 				do i3 = 1, matDim
@@ -785,7 +795,7 @@ contains
 			endif
 		enddo
 		
-		call eigenSolve(hAhVals,hAhVecs,hAh,basisSize,basisSize,0)
+		call eigenSolve(hAhVals,hAhVecs,hAh,basisSize,basisSize,1)
 		
 		i1 = 0
 		i2 = basisSize
@@ -807,6 +817,9 @@ contains
 			    tempV1(i3) = Mmat(i3)*tempV2(i3)
 			enddo
 		    call solveSparseLDLFact(tempV3, tempV1, ALT, ALTSize, ALTRange, matDim, tempV2)
+			do i3 = 1, matDim
+			    tempV3(i3) = Mmat(i3)*tempV3(i3)
+			enddo
 			dp = r_0
 			mag = r_0
 			do i3 = 1, matDim
@@ -819,6 +832,17 @@ contains
 				eVals(i1) = r_1/dp
 			endif
 			i2 = i2 - 1
+		enddo
+		
+		do i3 = 1, i1
+		    mag = 0d0
+			do i4 = 1, matDim
+			    tVal = eVecs(i4,i3)/Mmat(i4)
+		        eVecs(i4,i3) = tVal
+				mag = mag + tVal*tVal
+			enddo
+			mag = sqrt(mag)
+			eVecs(:,i3) = (1d0/mag)*eVecs(:,i3)
 		enddo
 		
 		deallocate(basisVecs)

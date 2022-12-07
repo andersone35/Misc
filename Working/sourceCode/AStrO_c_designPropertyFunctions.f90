@@ -204,6 +204,8 @@
              endif			
  		enddo
  		
+ 		locRot(:) = c_pi180*locRot(:)
+ 		
  		i1 = secNum*3
  		alOrig(:,:) = c_1*sectionOrient(:,i1-2:i1)
  		
@@ -263,7 +265,7 @@
  		complex*16 :: secThick, layerThick, layerProps(6)
  		complex*16 :: zCrd, zNext, zOff
  		complex*16 :: SMat(3,3), QMat(3,3), fVec(3), zVec(3)
- 		complex*16 :: a11, a12, a21, a22
+ 		complex*16 :: thetaRad, a11, a12, a21, a22
  		complex*16 :: Ts(3,3), Te(3,3), TeInv(3,3)
  		integer :: secNum, layerNum
  		integer :: i1, i2, i3, i4
@@ -313,8 +315,9 @@
  			call c_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
  			! write(lfUnit,*) 'QMat: '
  			! write(lfUnit,*) QMat
- 			call c_cos(a11,layerProps(6))
-             call c_sin(a21,layerProps(6))
+ 			thetaRad = c_pi180*layerProps(6)
+ 			call c_cos(a11,thetaRad)
+             call c_sin(a21,thetaRad)
  			! write(lfUnit,*) 'a11: ', a11, 'a21: ', a21
              a12 = -a21
              a22 = a11
@@ -378,7 +381,7 @@
  		complex*16 :: secThick, layerThick, layerExp(6), layerProps(6)
  		complex*16 :: zCrd, zNext, zOff
  		complex*16 :: SMat(3,3), QMat(3,3), fVec(3), zVec(3)
- 		complex*16 :: a11, a12, a21, a22
+ 		complex*16 :: thetaRad, a11, a12, a21, a22
  		complex*16 :: Ts(3,3), Te(3,3), TeInv(3,3)
  		integer :: secNum, layerNum
  		integer :: i1, i2, i3, i4
@@ -429,8 +432,9 @@
  			SMat(3,3) = c_1/layerProps(4)
  			SMat(2,1) = SMat(1,2)
  			call c_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
- 			call c_cos(a11,layerProps(6))
-             call c_sin(a21,layerProps(6))
+ 			thetaRad = c_pi180*layerProps(6)
+ 			call c_cos(a11,thetaRad)
+             call c_sin(a21,thetaRad)
              a12 = -a21
              a22 = a11
              Ts(1,1) = a11*a11
@@ -537,7 +541,7 @@
  		integer, intent(in) :: element
  		complex*16, intent(out) :: tCond(3,3)
  		
- 		complex*16 :: secThick, layerThick, layerCond(6), layerAngle
+ 		complex*16 :: secThick, layerThick, layerCond(6), layerAngle, thetaRad
  		complex*16 :: tCLoc(3,3), tCglob(3,3), prod(3,3)
  		complex*16 :: zCrd, zNext, zOff
  		complex*16 :: alpha(3,3)
@@ -580,8 +584,9 @@
  		    tCLoc(2,3) = layerCond(6)
  		    tCLoc(3,2) = layerCond(6)
  			alpha(:,:) = c_0
- 			call c_cos(alpha(1,1),layerAngle)
-             call c_sin(alpha(2,1),layerAngle)
+ 			thetaRad = c_pi180*layerAngle
+ 			call c_cos(alpha(1,1),thetaRad)
+             call c_sin(alpha(2,1),thetaRad)
              alpha(1,2) = -alpha(2,1)
              alpha(2,2) = alpha(1,1)
  			alpha(3,3) = c_1
@@ -612,7 +617,7 @@
  		integer, intent(in) :: element
  		complex*16, intent(out) :: sH
  		
- 		complex*16 :: secThick, layerThick, layerSH, layerDen, layerAngle
+ 		complex*16 :: secThick, layerThick, layerSH, layerDen
  		complex*16 :: zCrd, zNext, zOff
  		integer :: secNum, layerNum
  		integer :: i1, i2, i3, i4
@@ -629,7 +634,6 @@
  			i2 = layupMatId(i1)
  			layerSH = c_1*materialSpecHeat(i2)
  			layerDen = c_1*materialDensity(i2)
- 			layerAngle = c_1*layupAngle(i1)
  			layerThick = c_1*layupThickness(i1)
  			do i2 = elToDRange(element-1)+1, elToDRange(element)
  			    i3 = elToD(i2)
@@ -638,8 +642,6 @@
  						layerSH = layerSH + elToCoef(i2)*c_dVec(i3)
  					elseif(dCategory(i3) .eq. 'density') then
  					    layerDen = layerDen + elToCoef(i2)*c_dVec(i3)
- 					elseif(dCategory(i3) .eq. 'angle') then
- 					    layerAngle = layerAngle + elToCoef(i2)*c_dVec(i3)
  					elseif(dCategory(i3) .eq. 'thickness') then
  					    layerThick = layerThick + elToCoef(i2)*c_dVec(i3)
  				    endif

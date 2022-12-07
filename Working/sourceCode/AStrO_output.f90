@@ -15,7 +15,7 @@ module AStrO_output
 		integer, intent(in) :: numFields, nSlen, tStep
 		real*8, intent(in) :: time
 		character(len=128), intent(in) :: fileName
-		character(len=16), intent(in) :: fields(numFields)
+		character(len=16), intent(in) :: fields(10)
 		integer, intent(in) :: ndSet(nSLen)
 		
 		character(len=16) :: intStr
@@ -159,7 +159,7 @@ module AStrO_output
 		integer, intent(in) :: numFields, eSLen, tStep
 		real*8, intent(in) :: time
 		character(len=128), intent(in) :: fileName
-		character(len=16), intent(in) :: fields(numFields)
+		character(len=16), intent(in) :: fields(10)
 		integer, intent(in) :: elSet(eSLen)
 		
 		integer :: numNds, dofPerNd, numIntDof, numIntPts

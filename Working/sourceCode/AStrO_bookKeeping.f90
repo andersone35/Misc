@@ -700,6 +700,7 @@ module AStrO_bookKeeping
 			
 			elMPCMat(:) = r_0
 			elMPCMatCols(:) = 0
+			elMPCMatRange(:) = 0
 			elMPCRHS(:) = r_0
 		endif
 		
@@ -784,7 +785,7 @@ module AStrO_bookKeeping
 				enddo
 466 			i3 = 0
             endif
-		enddo		
+		enddo
 		
 		deallocate(eqnBlockNumEqns)
 		deallocate(eqnBlockNumTrms)
@@ -840,6 +841,7 @@ module AStrO_bookKeeping
 			
 			thermMPCMat(:) = r_0
 			thermMPCMatCols(:) = 0
+			thermMPCMatRange(:) = 0
 			thermMPCRHS(:) = r_0
 		endif
 		

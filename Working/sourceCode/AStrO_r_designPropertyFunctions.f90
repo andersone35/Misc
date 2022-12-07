@@ -204,6 +204,8 @@ module AStrO_r_designPropertyFunctions
             endif			
 		enddo
 		
+		locRot(:) = r_pi180*locRot(:)
+		
 		i1 = secNum*3
 		alOrig(:,:) = r_1*sectionOrient(:,i1-2:i1)
 		
@@ -263,7 +265,7 @@ module AStrO_r_designPropertyFunctions
 		real*8 :: secThick, layerThick, layerProps(6)
 		real*8 :: zCrd, zNext, zOff
 		real*8 :: SMat(3,3), QMat(3,3), fVec(3), zVec(3)
-		real*8 :: a11, a12, a21, a22
+		real*8 :: thetaRad, a11, a12, a21, a22
 		real*8 :: Ts(3,3), Te(3,3), TeInv(3,3)
 		integer :: secNum, layerNum
 		integer :: i1, i2, i3, i4
@@ -313,8 +315,9 @@ module AStrO_r_designPropertyFunctions
 			call r_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
 			! write(lfUnit,*) 'QMat: '
 			! write(lfUnit,*) QMat
-			call r_cos(a11,layerProps(6))
-            call r_sin(a21,layerProps(6))
+			thetaRad = r_pi180*layerProps(6)
+			call r_cos(a11,thetaRad)
+            call r_sin(a21,thetaRad)
 			! write(lfUnit,*) 'a11: ', a11, 'a21: ', a21
             a12 = -a21
             a22 = a11
@@ -378,7 +381,7 @@ module AStrO_r_designPropertyFunctions
 		real*8 :: secThick, layerThick, layerExp(6), layerProps(6)
 		real*8 :: zCrd, zNext, zOff
 		real*8 :: SMat(3,3), QMat(3,3), fVec(3), zVec(3)
-		real*8 :: a11, a12, a21, a22
+		real*8 :: thetaRad, a11, a12, a21, a22
 		real*8 :: Ts(3,3), Te(3,3), TeInv(3,3)
 		integer :: secNum, layerNum
 		integer :: i1, i2, i3, i4
@@ -429,8 +432,9 @@ module AStrO_r_designPropertyFunctions
 			SMat(3,3) = r_1/layerProps(4)
 			SMat(2,1) = SMat(1,2)
 			call r_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
-			call r_cos(a11,layerProps(6))
-            call r_sin(a21,layerProps(6))
+			thetaRad = r_pi180*layerProps(6)
+			call r_cos(a11,thetaRad)
+            call r_sin(a21,thetaRad)
             a12 = -a21
             a22 = a11
             Ts(1,1) = a11*a11
@@ -537,7 +541,7 @@ module AStrO_r_designPropertyFunctions
 		integer, intent(in) :: element
 		real*8, intent(out) :: tCond(3,3)
 		
-		real*8 :: secThick, layerThick, layerCond(6), layerAngle
+		real*8 :: secThick, layerThick, layerCond(6), layerAngle, thetaRad
 		real*8 :: tCLoc(3,3), tCglob(3,3), prod(3,3)
 		real*8 :: zCrd, zNext, zOff
 		real*8 :: alpha(3,3)
@@ -580,8 +584,9 @@ module AStrO_r_designPropertyFunctions
 		    tCLoc(2,3) = layerCond(6)
 		    tCLoc(3,2) = layerCond(6)
 			alpha(:,:) = r_0
-			call r_cos(alpha(1,1),layerAngle)
-            call r_sin(alpha(2,1),layerAngle)
+			thetaRad = r_pi180*layerAngle
+			call r_cos(alpha(1,1),thetaRad)
+            call r_sin(alpha(2,1),thetaRad)
             alpha(1,2) = -alpha(2,1)
             alpha(2,2) = alpha(1,1)
 			alpha(3,3) = r_1
@@ -612,7 +617,7 @@ module AStrO_r_designPropertyFunctions
 		integer, intent(in) :: element
 		real*8, intent(out) :: sH
 		
-		real*8 :: secThick, layerThick, layerSH, layerDen, layerAngle
+		real*8 :: secThick, layerThick, layerSH, layerDen
 		real*8 :: zCrd, zNext, zOff
 		integer :: secNum, layerNum
 		integer :: i1, i2, i3, i4
@@ -629,7 +634,6 @@ module AStrO_r_designPropertyFunctions
 			i2 = layupMatId(i1)
 			layerSH = r_1*materialSpecHeat(i2)
 			layerDen = r_1*materialDensity(i2)
-			layerAngle = r_1*layupAngle(i1)
 			layerThick = r_1*layupThickness(i1)
 			do i2 = elToDRange(element-1)+1, elToDRange(element)
 			    i3 = elToD(i2)
@@ -638,8 +642,6 @@ module AStrO_r_designPropertyFunctions
 						layerSH = layerSH + elToCoef(i2)*r_dVec(i3)
 					elseif(dCategory(i3) .eq. 'density') then
 					    layerDen = layerDen + elToCoef(i2)*r_dVec(i3)
-					elseif(dCategory(i3) .eq. 'angle') then
-					    layerAngle = layerAngle + elToCoef(i2)*r_dVec(i3)
 					elseif(dCategory(i3) .eq. 'thickness') then
 					    layerThick = layerThick + elToCoef(i2)*r_dVec(i3)
 				    endif

@@ -17,10 +17,10 @@ program AStrO_runJob
     
     character(len=256) :: fileLine, commandString
     character(len=128) :: jobScriptName, inputFileName, outputFileName, fullFileName
-    character(len=16) :: fields(10)
+    character(len=16) :: fields(10), solnField
     real*8 :: time
-    real*8 :: scaleFactor
-    integer :: numFields, writeGrad, setDispMode, writeModes
+    real*8 :: maxAmp
+    integer :: numFields, writeGrad, setSolnMode, writeModes
     integer :: readInt(3), errFlag
     integer :: i1, i2, i3, i4, i5, i6, i7, iosVal, bw3, nnd2, readModel, nSInd, eSInd
     
@@ -283,12 +283,18 @@ program AStrO_runJob
                 eigenFactors(:) = r_0
                 diagMassMat(:) = r_0
                 i3 = dynamic
+				i4 = nLGeom
                 dynamic = 0
+				nLGeom = 1
                 call getElasticSolnLoad(1)
 				call scaleElasticMPC()
                 dynamic = i3
+				nLGeom = i4
                 if(modalType .eq. 1) then
                     call getDiagMassMat()
+					do i3 = 1, elMatDim
+					    diagMassMat(i3) = sqrt(diagMassMat(i3))
+					enddo
                 else
                     diagMassMat(:) = r_1
                 endif
@@ -308,20 +314,26 @@ program AStrO_runJob
                         eigenFactors(i3) = r_p5*sqrt(eigenVals(i3))/r_pi
                     enddo
                 endif
-            elseif(fileLine(i1:i1+13) .eq. '*setDispToMode') then
-                scaleFactor = 0.01d0
-                setDispMode = 1
+            elseif(fileLine(i1:i1+13) .eq. '*setSolnToMode') then
+                solnField = 'displacement'
+				call getModelDimension(maxAmp)
+				maxAmp = 0.1d0*maxAmp
+                setSolnMode = 1
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')
                 do while(i1 .eq. 0 .and. iosVal .eq. 0)
                     i2 = index(fileLine,':')
                     if(i2 .gt. 0) then
                         if(fileLine(i2-4:i2) .eq. 'mode:') then
-                            read(fileLine(i2+1:i2+64),*) setDispMode
+                            read(fileLine(i2+1:i2+64),*) setSolnMode
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)
                             i1 = index(fileLine,'*')
-                        elseif(fileLine(i2-11:i2) .eq. 'scaleFactor:') then
-                            read(fileLine(i2+1:i2+64),*) scaleFactor
+						elseif(fileLine(i2-9:i2) .eq. 'solnField:') then
+						    read(fileLine(i2+1:i2+64),*) solnField
+							read(8,'(A)',iostat=iosVal) fileLine(16:256)
+                            i1 = index(fileLine,'*')
+                        elseif(fileLine(i2-12:i2) .eq. 'maxAmplitude:') then
+                            read(fileLine(i2+1:i2+64),*) maxAmp
                             read(8,'(A)',iostat=iosVal) fileLine(16:256)
                             i1 = index(fileLine,'*')
                         else
@@ -333,7 +345,7 @@ program AStrO_runJob
                         i1 = index(fileLine,'*')
                     endif
                 enddo
-                call setSolnToMode(nodeDisp,elMatDim,setDispMode,scaleFactor)
+                call setSolnToMode(solnField,setSolnMode,maxAmp)
             elseif(fileLine(i1:i1+13) .eq. '*calcObjective') then
 			    write(lfUnit,*) 'calculating objective'
 				write(*,*) 'calculating objective'

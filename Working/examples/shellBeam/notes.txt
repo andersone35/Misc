@@ -13,7 +13,7 @@ Solution validation cases:
 
 - critical buckling load in x compression = pi^2EI/4L^2 = 2.056176
 
-- 1st mode natural frequency, unloaded = (0.56/L^2)(EI/m)^0.5 = 0.16165804304147693 Hz
+- 1st mode natural frequency, unloaded = (0.56/L^2)(EI/m)^0.5 = 0.16165804304147693 Hz (1.0157274408256 rad/sec), period = 6.1858969784969 sec
 
 Sensitivity validation cases:
 

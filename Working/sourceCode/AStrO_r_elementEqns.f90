@@ -407,6 +407,10 @@ module AStrO_r_elementEqns
 			intPts(:,2) = r_1rt3*(/r_1,-r_1,r_0/)
 			intPts(:,3) = r_1rt3*(/-r_1,r_1,r_0/)
 			intPts(:,4) = r_1rt3*(/r_1,r_1,r_0/)
+			! dofTable(:,25) = (/3,7/)
+			! dofTable(:,26) = (/3,8/)
+			! dofTable(:,27) = (/3,9/)
+			! dofTable(:,28) = (/3,10/)
 			dofTable(:,25) = (/1,5/)
 			dofTable(:,26) = (/1,6/)
 			dofTable(:,27) = (/2,5/)
@@ -1490,7 +1494,7 @@ module AStrO_r_elementEqns
         real*8 :: secThick, zOff, zCrd, layerThick, zNext, zMid
 		real*8 :: globE(3), locE(3), locS(3)
 		real*8 :: layerProps(6), tExp(6), SMat(3,3), QMat(3,3), fVec(3), zVec(3)
-		real*8 :: a11, a22, a12, a21, Te(3,3), Ts(3,3)
+		real*8 :: thetaRad, a11, a22, a12, a21, Te(3,3), Ts(3,3)
 		integer :: secNum, i1, i2, i3, i4, matID
 		
 		secNum = elementSection(elNum)
@@ -1550,8 +1554,9 @@ module AStrO_r_elementEqns
 		SMat(3,3) = r_1/layerProps(4)
 		SMat(2,1) = SMat(1,2)
 		call r_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
-		call r_cos(a11,layerProps(6))
-		call r_sin(a12,layerProps(6))
+		thetaRad = r_pi180*layerProps(6)
+		call r_cos(a11,thetaRad)
+		call r_sin(a12,thetaRad)
 		a21 = -a12
 		a22 = a11
 		Ts(1,1) = a11*a11
@@ -1605,7 +1610,7 @@ module AStrO_r_elementEqns
 		real*8 :: secThick, zOff, zCrd, layerThick, zNext, zMid
 		real*8 :: dglobEdU(3,33), dlocEdU(3,33), dlocSdU(3,33), dlocSdT(3,10)
 		real*8 :: layerProps(6), tExp(6), SMat(3,3), QMat(3,3), fVec(3), zVec(3)
-		real*8 :: a11, a22, a12, a21, Te(3,3), Ts(3,3)
+		real*8 :: thetaRad, a11, a22, a12, a21, Te(3,3), Ts(3,3)
 		integer :: secNum, i1, i2, i3, i4, matID
 		
 		secNum = elementSection(elNum)
@@ -1667,8 +1672,9 @@ module AStrO_r_elementEqns
 		SMat(3,3) = r_1/layerProps(4)
 		SMat(2,1) = SMat(1,2)
 		call r_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
-		call r_cos(a11,layerProps(6))
-		call r_sin(a12,layerProps(6))
+		thetaRad = r_pi180*layerProps(6)
+		call r_cos(a11,thetaRad)
+		call r_sin(a12,thetaRad)
 		a21 = -a12
 		a22 = a11
 		Ts(1,1) = a11*a11

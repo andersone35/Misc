@@ -14,7 +14,7 @@ module AStrO_constantVals
     real*8 :: r_1rt3 = 1d0/sqrt(3d0)
     real*8 :: r_1rt2 = 1d0/sqrt(2d0)
 	real*8 :: r_pi = 3.141592653589793
-    real*8 :: r_pi180 = 0.01745329251994
+    real*8 :: r_pi180 = 0.0174532925199433
     real*8 :: r_penFact = 1e+30_8
     real*8 :: r_cgTol = 1e-15_8
     real*8 :: r_0vec(3) = (/0d0,0d0,0d0/)
@@ -31,7 +31,7 @@ module AStrO_constantVals
     complex*16 :: c_1rt3 = (0.577350269189626,0d0)
     complex*16 :: c_1rt2 = (0.707106781186547,0d0)
 	complex*16 :: c_pi = (3.14159265358979323846,0d0)
-    complex*16 :: c_pi180 = (0.01745329251994,0d0)
+    complex*16 :: c_pi180 = (0.0174532925199433,0d0)
     complex*16 :: c_penFact = (1e+30_8,0d0)
     complex*16 :: c_cgTol = (1e-30_8,0d0)
     complex*16 :: c_0vec(3) = (/(0d0,0d0),(0d0,0d0),(0d0,0d0)/)

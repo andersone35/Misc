@@ -407,6 +407,10 @@
  			intPts(:,2) = c_1rt3*(/c_1,-c_1,c_0/)
  			intPts(:,3) = c_1rt3*(/-c_1,c_1,c_0/)
  			intPts(:,4) = c_1rt3*(/c_1,c_1,c_0/)
+ 			! dofTable(:,25) = (/3,7/)
+ 			! dofTable(:,26) = (/3,8/)
+ 			! dofTable(:,27) = (/3,9/)
+ 			! dofTable(:,28) = (/3,10/)
  			dofTable(:,25) = (/1,5/)
  			dofTable(:,26) = (/1,6/)
  			dofTable(:,27) = (/2,5/)
@@ -1490,7 +1494,7 @@
          complex*16 :: secThick, zOff, zCrd, layerThick, zNext, zMid
  		complex*16 :: globE(3), locE(3), locS(3)
  		complex*16 :: layerProps(6), tExp(6), SMat(3,3), QMat(3,3), fVec(3), zVec(3)
- 		complex*16 :: a11, a22, a12, a21, Te(3,3), Ts(3,3)
+ 		complex*16 :: thetaRad, a11, a22, a12, a21, Te(3,3), Ts(3,3)
  		integer :: secNum, i1, i2, i3, i4, matID
  		
  		secNum = elementSection(elNum)
@@ -1550,8 +1554,9 @@
  		SMat(3,3) = c_1/layerProps(4)
  		SMat(2,1) = SMat(1,2)
  		call c_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
- 		call c_cos(a11,layerProps(6))
- 		call c_sin(a12,layerProps(6))
+ 		thetaRad = c_pi180*layerProps(6)
+ 		call c_cos(a11,thetaRad)
+ 		call c_sin(a12,thetaRad)
  		a21 = -a12
  		a22 = a11
  		Ts(1,1) = a11*a11
@@ -1605,7 +1610,7 @@
  		complex*16 :: secThick, zOff, zCrd, layerThick, zNext, zMid
  		complex*16 :: dglobEdU(3,33), dlocEdU(3,33), dlocSdU(3,33), dlocSdT(3,10)
  		complex*16 :: layerProps(6), tExp(6), SMat(3,3), QMat(3,3), fVec(3), zVec(3)
- 		complex*16 :: a11, a22, a12, a21, Te(3,3), Ts(3,3)
+ 		complex*16 :: thetaRad, a11, a22, a12, a21, Te(3,3), Ts(3,3)
  		integer :: secNum, i1, i2, i3, i4, matID
  		
  		secNum = elementSection(elNum)
@@ -1667,8 +1672,9 @@
  		SMat(3,3) = c_1/layerProps(4)
  		SMat(2,1) = SMat(1,2)
  		call c_GetInvLU(QMat,SMat,fVec,zVec,3,1,3)
- 		call c_cos(a11,layerProps(6))
- 		call c_sin(a12,layerProps(6))
+ 		thetaRad = c_pi180*layerProps(6)
+ 		call c_cos(a11,thetaRad)
+ 		call c_sin(a12,thetaRad)
  		a21 = -a12
  		a22 = a11
  		Ts(1,1) = a11*a11
