@@ -66,9 +66,7 @@ module AStrO_commandFunctions
 					inputFileName = adjustl(inputFileName)
 					inputFileName = trim(inputFileName)
 					write(lfUnit,*) 'calling ', commandTag, 'file: ', inputFileName
-					write(*,*) 'calling ', commandTag, 'file: ', inputFileName
 					call readAnyInput(inputFileName,commandTag)
-					write(*,*) 'finished reading input'
 				endif
 			endif
 			read(jobUnit,'(A)',iostat=iosVal) fileLine(16:256)
@@ -207,13 +205,9 @@ module AStrO_commandFunctions
 						read(loadNodes(i2),*,err=147) i3
 						trac(1) = inputLoads(5,i2)
 						trac(2:6) = r_0
-						do i4 = 1, 6
-						    if(elementSurfaces(i4,i3) .eq. 1) then
-							    nDir(:) = inputLoads(1:3,i2)
-								tTol = inputLoads(4,i2)
-							    call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,r_0,i3,i4,nDir,tTol)
-							endif
-						enddo
+						nDir(:) = inputLoads(1:3,i2)
+						tTol = inputLoads(4,i2)
+						call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,r_0,i3,nDir,tTol)
 						do i4 = 1, ndDof
 						    i5 = dofTable(1,i4)
 							if(i5 .eq. 1) then
@@ -228,13 +222,9 @@ module AStrO_commandFunctions
 									i6 = elementSets(i5)
 									trac(1) = inputLoads(5,i2)
 						            trac(2:6) = r_0
-									do i7 = 1, 6
-										if(elementSurfaces(i7,i6) .eq. 1) then
-											nDir(:) = inputLoads(1:3,i2)
-											tTol = inputLoads(4,i2)
-											call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,r_0,i6,i7,nDir,tTol)
-										endif
-									enddo
+									nDir(:) = inputLoads(1:3,i2)
+									tTol = inputLoads(4,i2)
+									call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,r_0,i6,nDir,tTol)
 									do i7 = 1, ndDof
 										i8 = dofTable(1,i7)
 										if(i8 .eq. 1) then
@@ -412,7 +402,7 @@ module AStrO_commandFunctions
 				bStiff, bMass, btExp, btCond, bsHeat, &
 				temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
 			!! -------------------
-			! if(i1 .eq. 1) then
+			! if(i1 .eq. 200) then
 			    ! write(lfUnit,*) 'element ', i1, ' data'
 				! write(lfUnit,*) 'numNds: ', numNds, 'dofPerNd: ', dofPerNd, 'numIntDof: ', numIntDof, 'numIntPts: ', numIntPts
 				! write(lfUnit,*) 'intPts: '
@@ -425,6 +415,8 @@ module AStrO_commandFunctions
 				! write(lfUnit,*) globNds
 				! write(lfUnit,*) 'orient: '
 				! write(lfUnit,*) orient
+				! write(lfUnit,*) 'cMat'
+				! write(lfUnit,*) cMat
 				! write(lfUnit,*) 'ABD: '
 				! write(lfUnit,*) ABD
 				! write(lfUnit,*) 'stExp: '
@@ -433,12 +425,12 @@ module AStrO_commandFunctions
 				! write(lfUnit,*) temp
 				! write(lfUnit,*) 'disp: '
 				! write(lfUnit,*) disp
-				! close(lfUnit)
-				! open(unit=lfUnit, file='jobLogFile.txt', action='write', access='append')
 			! endif
 			!! ----------------------------
-			call r_getInstOrient(statInOri,orient,disp,numNds,1)
 			eType = elementType(i1)
+			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+			    call r_getInstOrient(statInOri,orient,disp,numNds,1)
+			endif
 		    call r_getElRu(Ru,dRdU,buildMat,eType,numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 				locNds,globNds,orient,cMat,tExp,ABD,stExp,bStiff,btExp,temp,disp,vel,acc,pDisp,pVel,pAcc, &
 				statInOri,den,sMass,bMass)
@@ -497,36 +489,33 @@ module AStrO_commandFunctions
 					enddo
 				endif
 				!! ---------------
-				! if(i1 .eq. 1) then
+				! if(i1 .eq. 200) then
 					! dRdU(1,1) = 10000d0*dRdU(1,1)
+					! dRdU(2,2) = 10000d0*dRdU(2,2)
+					! dRdU(3,3) = 10000d0*dRdU(3,3)
 					! dRdU(4,4) = 10000d0*dRdU(4,4)
-					! dRdU(5,5) = 10000d0*dRdU(5,5)
-					! dRdU(8,8) = 10000d0*dRdU(8,8)
 					! dRdU(9,9) = 10000d0*dRdU(9,9)
-					! dRdU(12,12) = 10000d0*dRdU(12,12)
-					! dRdU(13,13) = 10000d0*dRdU(13,13)
-					! dRdU(16,16) = 10000d0*dRdU(16,16)
 					! dRdU(17,17) = 10000d0*dRdU(17,17)
-					! dRdU(20,20) = 10000d0*dRdU(20,20)
-					! dRdU(21,21) = 10000d0*dRdU(21,21)
-					! dRdU(24,24) = 10000d0*dRdU(24,24)
+					! dRdU(18,18) = 10000d0*dRdU(18,18)
 					! bVec(:) = r_0
-					! bVec(2) = r_1
-					! bVec(3) = r_1
+					! bVec(5) = 0.25d0
+					! bVec(6) = 0.25d0
+					! bVec(7) = 0.25d0
+					! bVec(8) = 0.25d0
 					! resVec(:) = r_0
-					! write(lfUnit,*) 'first el mat:'
+					! write(lfUnit,*) 'single el mat:'
 					! do i2 = 1, 24
 					    ! write(lfUnit,*) dRdU(1:24,i2)
 					! enddo
-					! call rFactorMat(dRdU(1:24,1:24),24,24,0)
-					! write(lfUnit,*) 'factored first el:'
+					! call rFactorMat(dRdU(1:24,1:24),24,24,1,24,1,24,0)
+					! write(lfUnit,*) 'factored single el:'
 					! do i2 = 1, 24
 					    ! write(lfUnit,*) dRdU(1:24,i2)
 					! enddo
-					! call solveRFactor(resVec(1:24),dRdU(1:24,1:24),bVec(1:24),24,24,0)
+					! call solveRFactor(resVec(1:24),dRdU(1:24,1:24),bVec(1:24),24,24,1,24,1,24,0)
 					! write(lfUnit,*) 'single el result:'
 					! do i2 = 1, numNds
-					    ! write(lfUnit,*) resVec(i2), resVec(i2+4), resVec(i2+8), resVec(i2+12), resVec(i2+16), resVec(i2+20)
+					    ! write(lfUnit,*) resVec(i2), resVec(i2+8), resVec(i2+16)
 					! enddo
 				! endif
 				!! -------------------
@@ -663,13 +652,9 @@ module AStrO_commandFunctions
 							trac(4:6) = r_0
 						endif
 						read(loadNodes(i2),*,err=367) i3
-						do i4 = 1, 6
-						    if(elementSurfaces(i4,i3) .eq. 1) then
-							    nDir(:) = inputLoads(1:3,i2)
-								tTol = inputLoads(4,i2)
-							    call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i3,i4,nDir,tTol)
-							endif
-						enddo
+						nDir(:) = inputLoads(1:3,i2)
+						tTol = inputLoads(4,i2)
+						call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i3,nDir,tTol)
 						do i4 = 1, ndDof
 						    i5 = dofTable(1,i4)
 							i6 = elementList(dofTable(2,i4),i3)
@@ -681,13 +666,9 @@ module AStrO_commandFunctions
 							if(elSetName(i4) .eq. loadNodes(i2)) then
 								do i5 = elSetRange(i4-1)+1, elSetRange(i4)
 									i6 = elementSets(i5)
-									do i7 = 1, 6
-										if(elementSurfaces(i7,i6) .eq. 1) then
-											nDir(:) = inputLoads(1:3,i2)
-											tTol = inputLoads(4,i2)
-											call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i6,i7,nDir,tTol)
-										endif
-									enddo
+									nDir(:) = inputLoads(1:3,i2)
+									tTol = inputLoads(4,i2)
+									call r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i6,nDir,tTol)
 									do i7 = 1, ndDof
 										i8 = dofTable(1,i7)
 										i9 = elementList(dofTable(2,i7),i6)
@@ -807,7 +788,9 @@ module AStrO_commandFunctions
 				bStiff, bMass, bTELd, btCond, bsHeat, &
 				temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i1)
 			eType = elementType(i1)
-			call r_getInstOrient(statInOri,orient,disp,numNds,1)
+			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+			    call r_getInstOrient(statInOri,orient,disp,numNds,1)
+			endif
 			acc(:,:) = r_0
 			i3 = numNds*dofPerNd
 			do i2 = 1, i3
@@ -1084,7 +1067,7 @@ module AStrO_commandFunctions
 		real*8, intent(in) :: time, appLdFact
 		
 		real*8 :: delUNorm, mag
-		integer :: i1, i2, maxNLIt, numVecs
+		integer :: i1, i2, i3, i4, maxNLIt, numVecs
 		
 		if(solveThermal .eq. 1) then
 		    numVecs = solverMaxBW
@@ -1133,6 +1116,15 @@ module AStrO_commandFunctions
 				    call updateExternalRHS(elasticLoad,elMatDim,intElasticLoad,intVecSize)
 				endif
 				write(lfUnit,*) 'calling solver, elastic solution'
+				!----
+				! write(lfUnit,*) 'applied load:'
+				! do i2 = 1, numNodes
+				    ! do i3 = 1, 3
+					    ! i4 = nDofIndex(i3,i2)
+						! write(lfUnit,*) i2, i3, elasticLoad(i4)
+					! enddo
+				! enddo
+				!----
 				if(solverMeth .eq. 'direct') then
 				    call solveSparseLDLFact(delDisp, elasticLoad, elMatLT, elMatLTSize, elMatLTRange, elMatDim, swapVec)
 				else
@@ -1165,6 +1157,11 @@ module AStrO_commandFunctions
 		real*8 :: time, c1, c2, appLdFact
 		integer :: i1, i2
 		
+		! ---
+		integer :: i3, i4, i5
+		real*8 :: x, z, P_6EI, M_EI
+		! ---
+		
 		if(.not. allocated(currentRank)) then
 		    call analysisPrep()
 		endif
@@ -1183,7 +1180,58 @@ module AStrO_commandFunctions
 		
 		if(solveElastic .eq. 1) then
 		    call getElasticSolnLoad(1)
+			! --------------
+			! P_6EI = 0.002d0
+			! M_EI = 0.012d0
+			! nodeDisp(:) = r_0
+			! do i1 = 1, numNodes
+			    ! x = nodeList(1,i1)
+				! z = nodeList(3,i1)
+				! i3 = nDofIndex(1,i1)
+				! nodeDisp(i3) = -1.000035d0*P_6EI*(60d0*x - 3d0*x*x)*(z-0.05d0)
+				! !nodeDisp(i3) = -M_EI*x*(z-0.05d0)
+				! i3 = nDofIndex(3,i1)
+				! nodeDisp(i3) = P_6EI*(30d0*x*x - x*x*x)
+				! !nodeDisp(i3) = 0.5d0*M_EI*x*x
+			! enddo
+			
+			! elasticLoad(:) = r_0
+			! do i1 = 1, elMatDim
+			    ! do i2 = elMatRange(i1-1)+1, elMatRange(i1)
+				    ! i3 = elMatCols(i2)
+					! if(i3 .ne. 0) then
+					    ! elasticLoad(i1) = elasticLoad(i1) + elasticMat(i2)*nodeDisp(i3)
+					! endif
+				! enddo
+			! enddo
+			
+			! write(lfUnit,*) 'reactionForce:'
+			! do i1 = 1, numNodes
+			    ! write(lfUnit,*) i1, elasticLoad(nDofIndex(1,i1)), elasticLoad(nDofIndex(2,i1)), elasticLoad(nDofIndex(3,i1))
+			! enddo
+			
+			! nodeDisp(:) = r_0
+			! elasticLoad(:) = r_0
+			! --------------
 			call scaleElasticMPC()
+			!---------------
+			! write(lfUnit,*) 'MPC Matrix:'
+			! do i1 = 1, elMPCDim
+			    ! write(lfUnit,*) 'equation', i1
+				! do i2 = elMPCMatRange(i1-1) + 1, elMPCMatRange(i1)
+				    ! i3 = elMPCMatCols(i2)
+					! if(i3 .ne. 0) then
+					    ! do i4 = 1, numNodes
+						    ! do i5 = 1, 3
+							    ! if(nDofIndex(i5,i4) .eq. i3) then
+								    ! write(lfUnit,*) '    node', i4, 'dof', i5, 'value', elMPCMat(i2)
+								! endif
+							! enddo
+						! enddo
+					! endif
+				! enddo
+			! enddo
+			!--------------------
 			if(nLGeom .eq. 0) then
 			    !! --------------------------
 				! outfileName = 'sparseStiffness.txt'
@@ -1191,21 +1239,45 @@ module AStrO_commandFunctions
 				! outfileName = 'elasticMPC.txt'
 				! call writeSparseMatrix(outfileName,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
 				!! ---------------------------------
-				
+				write(*,*) 'converting to LTri'
 				call convertToLTri(elMatLT,elMatLTRange,elMatLTSize,elasticMat,elMatCols,elMatRange, &
 					 elMatSize,elMatDim,elMPCMat,elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
-			    !allocate(aFull(elMatDim,elMatDim))
+				
+				!! ------------------------
+			    ! allocate(aFull(elMatDim,elMatDim))
 			    ! call convertToFullPop(aFull,elasticMat,elMatCols,elMatRange,elMatSize,elMatDim,elMPCMat, &
 				    ! elMPCMatCols,elMPCMatRange,elMPCSize,elMPCDim)
+				! write(lfUnit,*) 'matrix discrepancies:'
+				! do i1 = 1, elMatDim
+				    ! i3 = i1 - (elMatLTRange(i1) - elMatLTRange(i1-1)) + 1
+				    ! do i2 = elMatLTRange(i1-1) + 1, elMatLTRange(i1)
+					    ! if(abs(elMatLT(i2) - aFull(i1,i3)) .gt. 0.00001d0) then
+						    ! write(lfUnit,*) 'row ', i1, 'col', i3, 'LT:', elMatLT(i2), 'aFull:', aFull(i1,i3)
+						! endif
+						! i3 = i3 + 1
+					! enddo
+					! i3 = i1 - (elMatLTRange(i1) - elMatLTRange(i1-1)) + 1
+					! do i2 = 1, i1
+					    ! if(abs(aFull(i1,i2)) .gt. 0.0000001d0 .and. i2 .lt. i3) then
+						    ! write(lfUnit,*) 'missing term, row', i1, 'col', i2, 'val', aFull(i1,i2)
+						! endif
+					! enddo
+				! enddo
+				! elasticLoad(:) = r_0
+				! call getElasticAppliedLoad(loadTime)
+				! call rFactorMat(aFull,elMatDim,elMatDim,1,elMatDim,1,elMatDim,0)
+				! call solveRFactor(nodeDisp,aFull,elasticLoad,elMatDim,elMatDim,1,elMatDim,1,elMatDim,0)
+				! write(lfUnit,*) 'full pop solution:'
+				! do i1 = 1, numNodes
+				    ! write(lfUnit,*) i1, nodeDisp(nDofIndex(1,i1)), nodeDisp(nDofIndex(2,i1)), nodeDisp(nDofIndex(3,i1))
+				! enddo
 				
 				!! ------------------------
 				!outfileName = 'elasticLTStiffess.txt'
 				!call writeLowerTriMatrix(outfileName,elMatLT,elMatLTRange,elMatLTSize,elMatDim)
 				!! -------------------------
-				
+				write(*,*) 'getting matrix factorization'
 				call getSparseLDLFact(elMatLT,elMatLTSize,elMatLTRange,elMatDim)
-				
-				!call rFactorMat(aFull,elMatDim,elMatDim,0)
 				
 				!! ------------------------
 				!outfileName = 'elasticLTFactored.txt'
@@ -1213,6 +1285,8 @@ module AStrO_commandFunctions
 				!! -------------------------
 			endif
 		endif
+		
+		write(*,*) 'beginning step solve'
 		
 		if(dynamic .eq. 0) then
 		    if(nLGeom .eq. 0) then
@@ -1260,7 +1334,7 @@ module AStrO_commandFunctions
 			numTSteps = i1
 		endif
 		
-		!deallocate(aFull)
+		! deallocate(aFull)
 		
 	end subroutine solve
 	
@@ -1570,7 +1644,7 @@ module AStrO_commandFunctions
 					do i2 = loadsRange(i1-1) + 1, loadsRange(i1)
 						read(loadNodes(i2),*,err=1082) i3
 						if(elDepends(i3) .eq. 1) then
-							bdyFrc(1) = inputLoads(1,i2)
+							bdyFrc(1) = c_1*inputLoads(1,i2)
 							bdyFrc(2:6) = c_0
 							call c_getElBodyForce(ndFrc,dofTable,ndDof,bdyFrc,0,i3)
 							do i4 = 1, ndDof
@@ -1587,7 +1661,7 @@ module AStrO_commandFunctions
 								do i5 = elSetRange(i4-1)+1, elSetRange(i4)
 									i6 = elementSets(i5)
 									if(elDepends(i6) .eq. 1) then
-										bdyFrc(1) = inputLoads(1,i2)
+										bdyFrc(1) = c_1*inputLoads(1,i2)
 										bdyFrc(2:6) = c_0
 										call c_getElBodyForce(ndFrc,dofTable,ndDof,bdyFrc,0,i6)
 										do i7 = 1, ndDof
@@ -1607,15 +1681,11 @@ module AStrO_commandFunctions
 					do i2 = loadsRange(i1-1) + 1, loadsRange(i1)
 						read(loadNodes(i2),*,err=1121) i3
 						if(elDepends(i3) .eq. 1) then
-							trac(1) = inputLoads(5,i2)
+							trac(1) = c_1*inputLoads(5,i2)
 							trac(2:6) = c_0
-							do i4 = 1, 6
-								if(elementSurfaces(i4,i3) .eq. 1) then
-									nDir(:) = inputLoads(1:3,i2)
-									tTol = inputLoads(4,i2)
-									call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,c_0,i3,i4,nDir,tTol)
-								endif
-							enddo
+							nDir(:) = c_1*inputLoads(1:3,i2)
+							tTol = c_1*inputLoads(4,i2)
+							call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,c_0,i3,nDir,tTol)
 							do i4 = 1, ndDof
 								i5 = dofTable(1,i4)
 								if(i5 .eq. 1) then
@@ -1630,15 +1700,11 @@ module AStrO_commandFunctions
 								do i5 = elSetRange(i4-1)+1, elSetRange(i4)
 									i6 = elementSets(i5)
 									if(elDepends(i6) .eq. 1) then
-										trac(1) = inputLoads(5,i2)
+										trac(1) = c_1*inputLoads(5,i2)
 										trac(2:6) = c_0
-										do i7 = 1, 6
-											if(elementSurfaces(i7,i6) .eq. 1) then
-												nDir(:) = inputLoads(1:3,i2)
-												tTol = inputLoads(4,i2)
-												call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,c_0,i6,i7,nDir,tTol)
-											endif
-										enddo
+										nDir(:) = c_1*inputLoads(1:3,i2)
+										tTol = c_1*inputLoads(4,i2)
+										call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,c_0,i6,nDir,tTol)
 										do i7 = 1, ndDof
 											i8 = dofTable(1,i7)
 											if(i8 .eq. 1) then
@@ -1713,7 +1779,9 @@ module AStrO_commandFunctions
 				bStiff, bMass, btExp, btCond, bsHeat, &
 	            temp,Tdot,disp,vel,acc,pTemp,pTdot,pDisp,pVel,pAcc,i2)
 			eType = elementType(i2)
-			call c_getInstOrient(statInOri,orient,disp,numNds,1)
+			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+			    call c_getInstOrient(statInOri,orient,disp,numNds,1)
+			endif
 			!! -------------------
 			! if(i2 .eq. 1) then
 			    ! write(lfUnit,*) 'dVarNum: ', dVarNum
@@ -1729,6 +1797,8 @@ module AStrO_commandFunctions
 				! write(lfUnit,*) globNds
 				! write(lfUnit,*) 'orient: '
 				! write(lfUnit,*) orient
+				! write(lfUnit,*) 'cMat: '
+				! write(lfUnit,*) cMat
 				! write(lfUnit,*) 'ABD: '
 				! write(lfUnit,*) ABD
 				! write(lfUnit,*) 'stExp: '
@@ -1773,13 +1843,13 @@ module AStrO_commandFunctions
 						read(loadNodes(i2),*,err=1087) i3
 						if(elDepends(i3) .eq. 1) then
 							if(lt .eq. 'centrifugal') then
-								center(:) = inputLoads(1:3,i2)
-								axis(:) = inputLoads(4:6,i2)
-								angVel = inputLoads(7,i2)
+								center(:) = c_1*inputLoads(1:3,i2)
+								axis(:) = c_1*inputLoads(4:6,i2)
+								angVel = c_1*inputLoads(7,i2)
 								call c_getElCentAcc(bdyFrc(1:3),center,axis,angVel,i3)
 								bdyFrc(4:6) = c_0
 							else
-								bdyFrc(:) = inputLoads(1:6,i2)
+								bdyFrc(:) = c_1*inputLoads(1:6,i2)
 							endif
 							call c_getElBodyForce(ndFrc,dofTable,ndDof,bdyFrc,isGrav,i3)
 							do i4 = 1, ndDof
@@ -1796,13 +1866,13 @@ module AStrO_commandFunctions
 									i6 = elementSets(i5)
 									if(elDepends(i6) .eq. 1) then
 										if(lt .eq. 'centrifugal') then
-											center(:) = inputLoads(1:3,i2)
-											axis(:) = inputLoads(4:6,i2)
-											angVel = inputLoads(7,i2)
+											center(:) = c_1*inputLoads(1:3,i2)
+											axis(:) = c_1*inputLoads(4:6,i2)
+											angVel = c_1*inputLoads(7,i2)
 											call c_getElCentAcc(bdyFrc(1:3),center,axis,angVel,i6)
 											bdyFrc(4:6) = c_0
 										else
-											bdyFrc(:) = inputLoads(1:6,i2)
+											bdyFrc(:) = c_1*inputLoads(1:6,i2)
 										endif
 										call c_getElBodyForce(ndFrc,dofTable,ndDof,bdyFrc,isGrav,i6)
 										do i7 = 1, ndDof
@@ -1820,22 +1890,18 @@ module AStrO_commandFunctions
                 elseif(lt .eq. 'surfacePressure' .or. lt .eq. 'surfaceTraction') then
 					do i2 = loadsRange(i1-1) + 1, loadsRange(i1)
 					    if(lt .eq. 'surfacePressure') then
-						    pressure = inputLoads(5,i2)
+						    pressure = c_1*inputLoads(5,i2)
 							trac(:) = c_0
 						else
 						    pressure = c_0
-							trac(1:3) = inputLoads(5:7,i2)
+							trac(1:3) = c_1*inputLoads(5:7,i2)
 							trac(4:6) = c_0
 						endif
 						read(loadNodes(i2),*,err=1137) i3
 						if(elDepends(i3) .eq. 1) then
-							do i4 = 1, 6
-								if(elementSurfaces(i4,i3) .eq. 1) then
-									nDir(:) = inputLoads(1:3,i2)
-									tTol = inputLoads(4,i2)
-									call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i3,i4,nDir,tTol)
-								endif
-							enddo
+						    nDir(:) = c_1*inputLoads(1:3,i2)
+							tTol = c_1*inputLoads(4,i2)
+							call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i3,nDir,tTol)
 							do i4 = 1, ndDof
 								i5 = dofTable(1,i4)
 								i6 = elementList(dofTable(2,i4),i3)
@@ -1849,13 +1915,9 @@ module AStrO_commandFunctions
 								do i5 = elSetRange(i4-1)+1, elSetRange(i4)
 									i6 = elementSets(i5)
 									if(elDepends(i6) .eq. 1) then
-										do i7 = 1, 6
-											if(elementSurfaces(i7,i6) .eq. 1) then
-												nDir(:) = inputLoads(1:3,i2)
-												tTol = inputLoads(4,i2)
-												call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i6,i7,nDir,tTol)
-											endif
-										enddo
+									    nDir(:) = c_1*inputLoads(1:3,i2)
+										tTol = c_1*inputLoads(4,i2)
+										call c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,i6,nDir,tTol)
 										do i7 = 1, ndDof
 											i8 = dofTable(1,i7)
 											i9 = elementList(dofTable(2,i7),i6)

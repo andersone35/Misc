@@ -280,6 +280,26 @@
                      alpha0(:,:) = alpha
  					call c_rotateAlpha(alpha,alpha0,v3,0,0)
                  endif
+ 			case(2)
+ 			    v1 = alpha(1,:)
+ 			    v2 = nodes(:,2) - nodes(:,1)
+ 				dp = v2(1)+v2(1) + v2(2)*v2(2) + v2(3)*v2(3)
+ 				call c_sqrt(mag,dp)
+ 				v2 = (c_1/mag)*v2
+ 				v3(1) = v1(2)*v2(3) - v1(3)*v2(2)
+                 v3(2) = v1(3)*v2(1) - v1(1)*v2(3)
+                 v3(3) = v1(1)*v2(2) - v1(2)*v2(1)
+ 				dp = v1(1)*v2(1) + v1(2)*v2(2) + v1(3)*v2(3)
+ 				call c_greater(check,c_0,dp)
+ 				if(check .eq. 1) then
+ 				    v3 = -v3
+ 				endif
+ 				dp = v3(1)*v3(1) + v3(2)*v3(2) + v3(3)*v3(3)
+ 				call c_sqrt(mag,dp)
+ 				call c_asin(theta,mag)
+ 				v3 = (theta/mag)*v3
+ 				alpha0(:,:) = alpha
+ 			    call c_rotateAlpha(alpha,alpha0,v3,0,0)
          end select
  
          return
@@ -495,7 +515,7 @@
  			call c_getShellExpLoad(sTELd,elNum)
  			call c_getShellThermCond(stCond,elNum)
  			call c_getShellSpecHeat(ssHeat,elNum)
-         else	
+         else
  			call c_getMaterialStiffness(cMat,elNum)
  			call c_getMaterialDensity(den,elNum)
  			call c_getMaterialThermExp(tExp,elNum)
@@ -593,8 +613,8 @@
  		complex*16, intent(out) :: Nvec(11), Nx(11,3), detJ
  		complex*16, intent(in) :: locNds(3,10), sPt(3)
  		
- 		complex*16 :: Ns(11,3), dxds(3,3), dsdx(3,3)
- 		integer :: i1, i2, i3
+ 		complex*16 :: Ns(11,3), dxds(3,3), dsdx(3,3), v3(3), mag, dp
+ 		integer :: i1, i2, i3, gt
  		
  		call c_EvalN(Nvec, sPt, eType)
  		call c_EvalNs(Ns, sPt, eType)
@@ -607,10 +627,20 @@
  			enddo
  		enddo
  		
- 		if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
- 		    dxds(3,3) = c_1
- 			if(eType .eq. 2) then
- 			    dxds(2,2) = c_1
+ 		if(eType .eq. 41 .or. eType .eq. 3) then
+ 		    v3(1) = dxds(2,1)*dxds(3,2) - dxds(3,1)*dxds(2,2)
+ 			v3(2) = dxds(3,1)*dxds(1,2) - dxds(1,1)*dxds(3,2)
+ 			v3(3) = dxds(1,1)*dxds(2,2) - dxds(2,1)*dxds(1,2)
+ 			dp = v3(1)*v3(1) + v3(2)*v3(2) + v3(3)*v3(3)
+ 			call c_sqrt(mag,dp)
+ 			dxds(:,3) = (c_1/mag)*v3(:)
+ 		elseif(eType .eq. 2) then
+ 		    dxds(2,2) = c_1
+ 			call c_greater(gt,dxds(1,1),c_0)
+ 			if(gt .eq. 1) then
+ 			    dxds(3,3) = c_1
+ 			else
+ 			    dxds(3,3) = -c_1
  			endif
  		endif
  		
@@ -1151,6 +1181,9 @@
  		integer :: i1, i2, i3
  		
  		eType = elementType(elNum)
+ 		if(eType .ne. 41 .and. eType .ne. 3) then
+ 		    return
+ 		endif
  		call c_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
  			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, &
  			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1219,6 +1252,9 @@
  		integer :: i1, i2, i3, i4, i5
  		
  		eType = elementType(elNum)
+ 		if(eType .ne. 41 .and. eType .ne. 3) then
+ 		    return
+ 		endif
  		call c_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
  			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, &
  			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1303,6 +1339,9 @@
  		integer :: i1, i2, i3
  		
  		eType = elementType(elNum)
+ 		if(eType .ne. 2) then
+ 		    return
+ 		endif
  		call c_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
  			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, &
  			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1371,6 +1410,9 @@
  		integer :: i1, i2, i3, i4, i5
  		
  		eType = elementType(elNum)
+ 		if(eType .ne. 2) then
+ 		    return
+ 		endif
  		call c_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
  			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, &
  			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1866,7 +1908,7 @@
  		complex*16 :: bStiff(6,6), bMass(6,6), btExp(6), btCond(3,3), bsHeat
  		complex*16 :: temp(10), Tdot(10), pTemp(10), pTdot(10)
  		complex*16 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
- 		complex*16 :: statInOri(3,240), statdrIdrG(3,16), statRot(3)		
+ 		complex*16 :: statInOri(3,240)		
  
          complex*16 :: dRdA(33,33), fakeAcc(6,11)
  		complex*16 :: Nvec(11), Nx(11,3), detJ, nnInv
@@ -1883,14 +1925,9 @@
  		
  		ndDof = numNds*dofPerNd
  		if(isGrav .eq. 1) then
- 			statRot(:) = c_0
- 			do i4 = 1, numNds
- 				statRot(:) = statRot(:) + disp(4:6,i4)
- 			enddo
- 			nnInv = numNds
- 			nnInv = c_1/nnInv
- 			statRot(:) = nnInv*statRot(:)
- 			call c_getInstOrient(statInOri,orient,disp,numNds,1)
+ 			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+ 			    call c_getInstOrient(statInOri,orient,disp,numNds,1)
+ 			endif
  		    do i1 = 1, numNds
  			    fakeAcc(:,i1) = bdyFrc(:)
  			enddo
@@ -1971,10 +2008,10 @@
  	
  	end subroutine c_getElCentAcc
  	
- 	subroutine c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,elNum,faceNum,normDir,thetaTol)
+ 	subroutine c_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,elNum,normDir,thetaTol)
  	    implicit none
  		
- 		integer, intent(in) :: elNum, faceNum
+ 		integer, intent(in) :: elNum
          complex*16, intent(in) :: trac(6), pressure, normDir(3), thetaTol
  		integer, intent(out) :: dofTable(2,33), ndDof
  		complex*16, intent(out) :: ndFrc(33)
@@ -1989,7 +2026,7 @@
  
          complex*16 :: mag, dp, thetaRad, cosTR, tracFinal(6)
          complex*16 :: Nvec(11), Nx(11,3), detJ, faceNds(3,10), elNorm(3), unitND(3)
- 		integer :: i1, i2, i3, i4, i5, eType, faces(6,6), numFaces, faceNumNds, gt
+ 		integer :: i1, i2, i3, i4, i5, i6, i7, eType, faces(6,6), numFaces, faceNum, faceNumNds, gt
  		
  		ndFrc(:) = c_0
  		call c_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
@@ -2000,71 +2037,86 @@
  		
  		ndDof = numNds*dofPerNd
  		
- 		call c_getElSurfaceNormal(elNorm,elNum,faceNum,globNds)
- 		
  		dp = normDir(1)*normDir(1) + normDir(2)*normDir(2) + normDir(3)*normDir(3)
  		call c_sqrt(mag,dp)
  		unitND(:) = (c_1/mag)*normDir(:)
  		
- 		dp = elNorm(1)*unitND(1) + elNorm(2)*unitND(2) + elNorm(3)*unitND(3)
- 		
  		thetaRad = c_pi180*thetaTol
  		call c_cos(cosTR,thetaRad)
- 		call c_greater(gt,dp,cosTR)
- 		if(gt .eq. 1) then
- 			call c_getElementFaces(faces,numFaces,elNum)
- 			
- 			faceNumNds = 0
- 			faceNds(:,:) = c_0
- 			do i1 = 1, 6
- 				i2 = faces(i1,faceNum)
- 				if(i2 .ne. 0) then
- 					faceNds(:,i1) = locNds(:,i2)
- 					faceNumNds = faceNumNds + 1
+ 		
+ 		call c_getElementFaces(faces,numFaces,elNum)
+ 		
+ 		do faceNum = 1, numFaces
+ 		    if(elementSurfaces(faceNum,elNum) .eq. 1) then
+ 				call c_getElSurfaceNormal(elNorm,elNum,faceNum,globNds)
+ 				
+ 				dp = elNorm(1)*unitND(1) + elNorm(2)*unitND(2) + elNorm(3)*unitND(3)
+ 				
+ 				call c_greater(gt,dp,cosTR)
+ 				if(gt .eq. 1) then
+ 					faceNumNds = 0
+ 					faceNds(:,:) = c_0
+ 					do i1 = 1, 6
+ 						i2 = faces(i1,faceNum)
+ 						if(i2 .ne. 0) then
+ 							faceNds(:,i1) = locNds(:,i2)
+ 							faceNumNds = faceNumNds + 1
+ 						endif
+ 					enddo
+ 					
+ 					if(abs(pressure) .gt. 0d0) then
+ 						tracFinal(1:3) = -pressure*elNorm(1:3)
+ 						tracFinal(4:6) = c_0
+ 					else
+ 						tracFinal(:) = trac(:)
+ 					endif
+ 					
+ 					if(faceNumNds .eq. 3) then
+ 						intPts(:,1) = c_1o6*(/c_1,c_1,c_0/)
+ 						intPts(:,2) = c_1o6*(/4d0,1d0,0d0/)
+ 						intPts(:,3) = c_1o6*(/1d0,4d0,0d0/)
+ 						ipWt(1:3) = c_1o6
+ 						do i1 = 1, 3
+ 							call c_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),3,3)
+ 							i3 = numNds*dofPerNd
+ 							detJ = detJ*ipWt(i1)
+ 							do i2 = 1, i3
+ 								i4 = dofTable(1,i2)
+ 								i5 = dofTable(2,i2)
+ 								do i6 = 1, 3
+ 								    i7 = faces(i6,faceNum)
+ 								    if(i5 .eq. i7) then
+ 								        ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i6)*detJ
+ 									endif
+ 								enddo
+ 							enddo
+ 						enddo
+ 					elseif(faceNumNds .eq. 4) then
+ 						intPts(:,1) = c_1rt3*(/-c_1,-c_1,c_0/)
+ 						intPts(:,2) = c_1rt3*(/c_1,-c_1,c_0/)
+ 						intPts(:,3) = c_1rt3*(/-c_1,c_1,c_0/)
+ 						intPts(:,4) = c_1rt3*(/c_1,c_1,c_0/)
+ 						ipWt(1:4) = c_1
+ 						do i1 = 1, 4
+ 							call c_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),41,4)
+ 							i3 = numNds*dofPerNd
+ 							detJ = detJ*ipWt(i1)
+ 							do i2 = 1, i3
+ 								i4 = dofTable(1,i2)
+ 								i5 = dofTable(2,i2)
+ 								do i6 = 1, 4
+ 								    i7 = faces(i6,faceNum)
+ 								    if(i5 .eq. i7) then
+ 								        ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i6)*detJ
+ 									endif
+ 								enddo
+ 							enddo
+ 						enddo	
+ 					endif
+ 					
  				endif
- 			enddo
- 			
- 			if(abs(pressure) .gt. 0d0) then
- 			    tracFinal(1:3) = -pressure*elNorm(1:3)
- 				tracFinal(4:6) = c_0
- 			else
- 			    tracFinal(:) = trac(:)
  			endif
- 			
- 			if(faceNumNds .eq. 3) then
- 				intPts(:,1) = c_1o6*(/c_1,c_1,c_0/)
- 				intPts(:,2) = c_1o6*(/4d0,1d0,0d0/)
- 				intPts(:,3) = c_1o6*(/1d0,4d0,0d0/)
- 				ipWt(1:3) = c_1o6
- 				do i1 = 1, 3
- 					call c_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),3,3)
- 					i3 = numNds*dofPerNd
- 					detJ = detJ*ipWt(i1)
- 					do i2 = 1, i3
- 						i4 = dofTable(1,i2)
- 						i5 = dofTable(2,i2)
- 						ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i5)*detJ
- 					enddo
- 				enddo
- 			elseif(faceNumNds .eq. 4) then
- 				intPts(:,1) = c_1rt3*(/-c_1,-c_1,c_0/)
- 				intPts(:,2) = c_1rt3*(/c_1,-c_1,c_0/)
- 				intPts(:,3) = c_1rt3*(/-c_1,c_1,c_0/)
- 				intPts(:,4) = c_1rt3*(/c_1,c_1,c_0/)
- 				ipWt(1:4) = c_1
- 				do i1 = 1, 4
- 					call c_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),41,4)
- 					i3 = numNds*dofPerNd
- 					detJ = detJ*ipWt(i1)
- 					do i2 = 1, i3
- 						i4 = dofTable(1,i2)
- 						i5 = dofTable(2,i2)
- 						ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i5)*detJ
- 					enddo
- 				enddo	
- 			endif
- 			
- 		endif
+ 		enddo
  	
  	end subroutine c_getElSurfaceTraction
  	

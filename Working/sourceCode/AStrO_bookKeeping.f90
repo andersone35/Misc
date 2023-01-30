@@ -342,7 +342,10 @@ module AStrO_bookKeeping
 				do while(i3 .gt. 0 .and. faces(i3,i2) .eq. 0)
 				    i3 = i3 - 1
 				enddo
-				faceNodes(:) = faces(:,i2)
+				faceNodes(:) = 0
+				do i4 = 1, i3
+				    faceNodes(i4) = elementList(faces(i4,i2),i1)
+				enddo
 				do i4 = 1, i3
 				    do i5 = 1, i3-1
 					    if(faceNodes(i5+1) .lt. faceNodes(i5)) then
@@ -563,6 +566,15 @@ module AStrO_bookKeeping
 			    i3 = nDofIndex(i2,i1)
 			    if(i3 .ne. 0) then
 				    elMatLTRange(i3) = 1
+					do i4 = 1, 6
+					    i5 = nDofIndex(i4,i1)
+						if(i5 .gt. 0 .and. i5 .lt. i3) then
+						    i6 = i3 - i5 + 1
+							if(i6 .gt. elMatLTRange(i3) .and. i6 .le. solverMaxBW) then
+							    elMatLTRange(i3) = i6
+							endif
+						endif
+					enddo
 					do i4 = nCRange(i1-1)+1, nCRange(i1)
 					    i5 = nodalConn(i4)
 						if(i5 .ne. 0) then

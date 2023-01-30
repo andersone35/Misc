@@ -45,12 +45,14 @@
  				i2 = elToD(i1)
  				if(dCategory(i2) .eq. 'modulus') then
  					i3 = dComponent(i2)
+ 					eProps(i3) = eProps(i3) + elToCoef(i1)*c_dVec(i2)
  				elseif(dCategory(i2) .eq. 'poissonRatio') then
  					i3 = dComponent(i2) + 3
+ 					eProps(i3) = eProps(i3) + elToCoef(i1)*c_dVec(i2)
  				elseif(dCategory(i2) .eq. 'shearModulus') then
  					i3 = dComponent(i2) + 6
+ 					eProps(i3) = eProps(i3) + elToCoef(i1)*c_dVec(i2)
  				endif
- 				eProps(i3) = eProps(i3) + elToCoef(i1)*c_dVec(i2)
  			enddo
  			
  			SMat(:,:) = c_0

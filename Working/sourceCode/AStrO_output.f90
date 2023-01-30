@@ -670,7 +670,7 @@ module AStrO_output
 			fltStr(19:20) = ', '
 			write(fltStr(21:38),'(G18.12)') eigenFactors(i1)
 			writeLine = '    -[' // trim(intStr) // ', ' // fltStr(1:38) // ']'
-			write(900,*) writeLine
+			write(900,*) trim(writeLine)
 		enddo
 		
 		if(writeModes .eq. 1) then
@@ -696,7 +696,7 @@ module AStrO_output
 						endif
 					enddo
 					writeLine = '          - [' // trim(intStr) // ', ' // fltStr(1:i5-2) // ']'
-					write(900,*) writeLine
+					write(900,*) trim(writeLine)
 				enddo
 			enddo
 		endif
@@ -741,7 +741,7 @@ module AStrO_output
 				i3 = i3 + 1
 			enddo
 			writeLine = '    - [' // trim(intStr) // ', ' // fltStr(1:i3-2) // ']'
-			write(965,*) writeLine
+			write(965,*) trim(writeLine)
 		enddo
 		
 		close(965)
@@ -932,7 +932,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '          - [' // trim(intStr) // ', ' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						enddo
 					else
 					    matID = sectionMatId(eSec)
@@ -953,7 +953,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '      modulus: [' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						else
 						    write(lfUnit,*) 'Warning: element ', i2, ' in section ', eSec, ' has no material definition.'
 							write(lfUnit,*) 'Cannont write modulus to element property output file'
@@ -984,7 +984,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '          - [' // trim(intStr) // ', ' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						enddo
 					else
 					    matID = sectionMatId(eSec)
@@ -1005,7 +1005,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '      shearModulus: [' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						else
 						    write(lfUnit,*) 'Warning: element ', i2, ' in section ', eSec, ' has no material definition.'
 							write(lfUnit,*) 'Cannont write shearModulus to element property output file'
@@ -1036,7 +1036,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '          - [' // trim(intStr) // ', ' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						enddo
 					else
 					    matID = sectionMatId(eSec)
@@ -1057,7 +1057,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '      poissonRatio: [' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						else
 						    write(lfUnit,*) 'Warning: element ', i2, ' in section ', eSec, ' has no material definition.'
 							write(lfUnit,*) 'Cannont write poissonRatio to element property output file.'
@@ -1088,7 +1088,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '          - [' // trim(intStr) // ', ' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						enddo
 					elseif(eType .eq. 2 .and. abs(beamThermCond(1,eSec)) .gt. r_0) then
 					    call r_getBeamTCond(tCondMat,i2)
@@ -1106,7 +1106,7 @@ module AStrO_output
 							i8 = i8 + 1
 						enddo
 						writeLine = '      sectnthermalCond: [' // fltStr(1:i8-2) // ']'
-						write(1010,*) writeLine
+						write(1010,*) trim(writeLine)
 					else
 					    matID = sectionMatId(eSec)
 						if(matID .gt. 0) then
@@ -1126,7 +1126,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '      thermalCond: [' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						else
 						    write(lfUnit,*) 'Warning: element ', i2, ' in section ', eSec, ' has no material definition.'
 							write(lfUnit,*) 'Cannont write thermalCond to element property output file.'
@@ -1157,7 +1157,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '          - [' // trim(intStr) // ', ' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						enddo
 					elseif(eType .eq. 2 .and. abs(beamExpLoadCoef(1,eSec)) .gt. r_0) then
 					    call r_getBeamExpLoad(elProps(1:6),i2)
@@ -1169,7 +1169,7 @@ module AStrO_output
 							i8 = i8 + 1
 						enddo
 						writeLine = '      sectnThermalExp: [' // fltStr(1:i8-2) // ']'
-						write(1010,*) writeLine
+						write(1010,*) trim(writeLine)
 					else
 					    matID = sectionMatId(eSec)
 						if(matID .gt. 0) then
@@ -1189,7 +1189,7 @@ module AStrO_output
 								i8 = i8 + 1
 							enddo
 							writeLine = '      thermalExp: [' // fltStr(1:i8-2) // ']'
-							write(1010,*) writeLine
+							write(1010,*) trim(writeLine)
 						else
 						    write(lfUnit,*) 'Warning: element ', i2, ' in section ', eSec, ' has no material definition.'
 							write(lfUnit,*) 'Cannont write thermalExp to element property output file.'
@@ -1206,7 +1206,7 @@ module AStrO_output
 							i8 = i8 + 1
 						enddo
 						writeLine = '      areaMoment: [' // fltStr(1:i8-2) // ']'
-						write(1010,*) writeLine
+						write(1010,*) trim(writeLine)
 					endif
 				elseif(propList(i3) .eq. 'orientation') then
 				    call r_getOrientation(orient,i2)
@@ -1224,7 +1224,7 @@ module AStrO_output
 						enddo
 					enddo
 					writeLine = '      orientation: [' // fltStr(1:i8-2) // ']'
-				    write(1010,*) writeLine
+				    write(1010,*) trim(writeLine)
 				elseif(propList(i3) .eq. 'stiffnessMat') then
 				    if(eType .eq. 2) then
 					    call r_getBeamStiffness(CMat,i2)
@@ -1244,7 +1244,7 @@ module AStrO_output
 						enddo
 					enddo
 					writeLine = '      stiffnessMat: [' // fltStr(1:i8-2) // ']'
-				    write(1010,*) writeLine
+				    write(1010,*) trim(writeLine)
 				elseif(propList(i3) .eq. 'massMat') then
 				    if(eType .eq. 2) then
 					    call r_getBeamMass(CMat,i2)
@@ -1261,7 +1261,7 @@ module AStrO_output
 						enddo
 					enddo
 					writeLine = '      massMat: [' // fltStr(1:i8-2) // ']'
-				    write(1010,*) writeLine
+				    write(1010,*) trim(writeLine)
 				endif
 			enddo
 		enddo
@@ -1337,7 +1337,7 @@ module AStrO_output
 		
         writeLine = '    totalValue: '
         write(writeLine(19:36),'(G18.12)') totalObj
-		write(653,*) writeLine
+		write(653,*) trim(writeLine)
 
         write(653,*) '    termValues:'
         do i1 = 1, numObjTerms
@@ -1383,7 +1383,7 @@ module AStrO_output
 				write(intStr,'(I0)') i1
 				write(fltStr,'(G18.12)') dLdD(i1)
 				writeLine = '    - [' // trim(intStr) // ', ' // trim(fltStr) // ']'
-				write(653,*) writeLine
+				write(653,*) trim(writeLine)
 			enddo
 		endif
 		

@@ -82,21 +82,41 @@ constraints:
           - [root, 6, 1.0]
       rhs: 0.0
 loads:
-   # arc deflection
+    # concentrated tip load
     - type: nodal
       activeTime: [0.0, 1.0]
+      setLoads:
+          - [tip, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
+    # surface pressure
+    - type: surfacePressure
+      activeTime: [1.0, 2.0]
+      setLoads: 
+          - [allEls,0.0,0.0,-1.0,1.0,0.1]
+    # gravitational
+    - type: gravitational
+      activeTime: [2.0, 3.0]
+      setLoads:
+          - [allEls,0.0,0.0,1.0]
+    # concentrated longitudinal tip load
+    - type: nodal
+      activeTime: [3.0, 4.0]
+      setLoads:
+          - [tip, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    # centrifugal
+    - type: centrifugal
+      activeTime: [4.0, 5.0]
+      setLoads: 
+          - [allEls,0.0,0.0,0.0,0.0,0.0,1.0,1.0]
+   # arc deflection
+    - type: nodal
+      activeTime: [5.0, 6.0]
       setLoads:
           - [tip, 0.0, 0.0, 0.0, 0.0, -3.27, 0.0, 0.0]
     # compression/buckling
     - type: nodal
-      activeTime: [1.0, 2.0]
+      activeTime: [6.0, 7.0]
       setLoads:
           - [tip, -0.514, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    # concentrated tip load
-    - type: nodal
-      activeTime: [2.0, 3.0]
-      setLoads:
-          - [tip, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 initialState:
     displacement:
         - [tip, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

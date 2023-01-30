@@ -280,6 +280,26 @@ module AStrO_r_elementEqns
                     alpha0(:,:) = alpha
 					call r_rotateAlpha(alpha,alpha0,v3,0,0)
                 endif
+			case(2)
+			    v1 = alpha(1,:)
+			    v2 = nodes(:,2) - nodes(:,1)
+				dp = v2(1)+v2(1) + v2(2)*v2(2) + v2(3)*v2(3)
+				call r_sqrt(mag,dp)
+				v2 = (r_1/mag)*v2
+				v3(1) = v1(2)*v2(3) - v1(3)*v2(2)
+                v3(2) = v1(3)*v2(1) - v1(1)*v2(3)
+                v3(3) = v1(1)*v2(2) - v1(2)*v2(1)
+				dp = v1(1)*v2(1) + v1(2)*v2(2) + v1(3)*v2(3)
+				call r_greater(check,r_0,dp)
+				if(check .eq. 1) then
+				    v3 = -v3
+				endif
+				dp = v3(1)*v3(1) + v3(2)*v3(2) + v3(3)*v3(3)
+				call r_sqrt(mag,dp)
+				call r_asin(theta,mag)
+				v3 = (theta/mag)*v3
+				alpha0(:,:) = alpha
+			    call r_rotateAlpha(alpha,alpha0,v3,0,0)
         end select
 
         return
@@ -495,7 +515,7 @@ module AStrO_r_elementEqns
 			call r_getShellExpLoad(sTELd,elNum)
 			call r_getShellThermCond(stCond,elNum)
 			call r_getShellSpecHeat(ssHeat,elNum)
-        else	
+        else
 			call r_getMaterialStiffness(cMat,elNum)
 			call r_getMaterialDensity(den,elNum)
 			call r_getMaterialThermExp(tExp,elNum)
@@ -593,8 +613,8 @@ module AStrO_r_elementEqns
 		real*8, intent(out) :: Nvec(11), Nx(11,3), detJ
 		real*8, intent(in) :: locNds(3,10), sPt(3)
 		
-		real*8 :: Ns(11,3), dxds(3,3), dsdx(3,3)
-		integer :: i1, i2, i3
+		real*8 :: Ns(11,3), dxds(3,3), dsdx(3,3), v3(3), mag, dp
+		integer :: i1, i2, i3, gt
 		
 		call r_EvalN(Nvec, sPt, eType)
 		call r_EvalNs(Ns, sPt, eType)
@@ -607,10 +627,20 @@ module AStrO_r_elementEqns
 			enddo
 		enddo
 		
-		if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
-		    dxds(3,3) = r_1
-			if(eType .eq. 2) then
-			    dxds(2,2) = r_1
+		if(eType .eq. 41 .or. eType .eq. 3) then
+		    v3(1) = dxds(2,1)*dxds(3,2) - dxds(3,1)*dxds(2,2)
+			v3(2) = dxds(3,1)*dxds(1,2) - dxds(1,1)*dxds(3,2)
+			v3(3) = dxds(1,1)*dxds(2,2) - dxds(2,1)*dxds(1,2)
+			dp = v3(1)*v3(1) + v3(2)*v3(2) + v3(3)*v3(3)
+			call r_sqrt(mag,dp)
+			dxds(:,3) = (r_1/mag)*v3(:)
+		elseif(eType .eq. 2) then
+		    dxds(2,2) = r_1
+			call r_greater(gt,dxds(1,1),r_0)
+			if(gt .eq. 1) then
+			    dxds(3,3) = r_1
+			else
+			    dxds(3,3) = -r_1
 			endif
 		endif
 		
@@ -1151,6 +1181,9 @@ module AStrO_r_elementEqns
 		integer :: i1, i2, i3
 		
 		eType = elementType(elNum)
+		if(eType .ne. 41 .and. eType .ne. 3) then
+		    return
+		endif
 		call r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, & 
 			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1219,6 +1252,9 @@ module AStrO_r_elementEqns
 		integer :: i1, i2, i3, i4, i5
 		
 		eType = elementType(elNum)
+		if(eType .ne. 41 .and. eType .ne. 3) then
+		    return
+		endif
 		call r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, & 
 			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1303,6 +1339,9 @@ module AStrO_r_elementEqns
 		integer :: i1, i2, i3
 		
 		eType = elementType(elNum)
+		if(eType .ne. 2) then
+		    return
+		endif
 		call r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, & 
 			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1371,6 +1410,9 @@ module AStrO_r_elementEqns
 		integer :: i1, i2, i3, i4, i5
 		
 		eType = elementType(elNum)
+		if(eType .ne. 2) then
+		    return
+		endif
 		call r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
 			locNds, globNds, orient, cMat, den, tExp, tCond, sHeat, & 
 			ABD, sMass, sTELd, stCond, ssHeat, &
@@ -1866,7 +1908,7 @@ module AStrO_r_elementEqns
 		real*8 :: bStiff(6,6), bMass(6,6), btExp(6), btCond(3,3), bsHeat
 		real*8 :: temp(10), Tdot(10), pTemp(10), pTdot(10)
 		real*8 :: disp(6,11), vel(6,11), acc(6,11), pDisp(6,11), pVel(6,11), pAcc(6,11)
-		real*8 :: statInOri(3,240), statdrIdrG(3,16), statRot(3)		
+		real*8 :: statInOri(3,240)		
 
         real*8 :: dRdA(33,33), fakeAcc(6,11)
 		real*8 :: Nvec(11), Nx(11,3), detJ, nnInv
@@ -1883,14 +1925,9 @@ module AStrO_r_elementEqns
 		
 		ndDof = numNds*dofPerNd
 		if(isGrav .eq. 1) then
-			statRot(:) = r_0
-			do i4 = 1, numNds
-				statRot(:) = statRot(:) + disp(4:6,i4)
-			enddo
-			nnInv = numNds
-			nnInv = r_1/nnInv
-			statRot(:) = nnInv*statRot(:)
-			call r_getInstOrient(statInOri,orient,disp,numNds,1)
+			if(eType .eq. 41 .or. eType .eq. 3 .or. eType .eq. 2) then
+			    call r_getInstOrient(statInOri,orient,disp,numNds,1)
+			endif
 		    do i1 = 1, numNds
 			    fakeAcc(:,i1) = bdyFrc(:)
 			enddo
@@ -1971,10 +2008,10 @@ module AStrO_r_elementEqns
 	
 	end subroutine r_getElCentAcc
 	
-	subroutine r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,elNum,faceNum,normDir,thetaTol)
+	subroutine r_getElSurfaceTraction(ndFrc,dofTable,ndDof,trac,pressure,elNum,normDir,thetaTol)
 	    implicit none
 		
-		integer, intent(in) :: elNum, faceNum
+		integer, intent(in) :: elNum
         real*8, intent(in) :: trac(6), pressure, normDir(3), thetaTol
 		integer, intent(out) :: dofTable(2,33), ndDof
 		real*8, intent(out) :: ndFrc(33)
@@ -1989,7 +2026,7 @@ module AStrO_r_elementEqns
 
         real*8 :: mag, dp, thetaRad, cosTR, tracFinal(6)
         real*8 :: Nvec(11), Nx(11,3), detJ, faceNds(3,10), elNorm(3), unitND(3)
-		integer :: i1, i2, i3, i4, i5, eType, faces(6,6), numFaces, faceNumNds, gt
+		integer :: i1, i2, i3, i4, i5, i6, i7, eType, faces(6,6), numFaces, faceNum, faceNumNds, gt
 		
 		ndFrc(:) = r_0
 		call r_getElementData(numNds,dofPerNd,numIntDof,numIntPts,dofTable,intPts,ipWt, &
@@ -2000,71 +2037,86 @@ module AStrO_r_elementEqns
 		
 		ndDof = numNds*dofPerNd
 		
-		call r_getElSurfaceNormal(elNorm,elNum,faceNum,globNds)
-		
 		dp = normDir(1)*normDir(1) + normDir(2)*normDir(2) + normDir(3)*normDir(3)
 		call r_sqrt(mag,dp)
 		unitND(:) = (r_1/mag)*normDir(:)
 		
-		dp = elNorm(1)*unitND(1) + elNorm(2)*unitND(2) + elNorm(3)*unitND(3)
-		
 		thetaRad = r_pi180*thetaTol
 		call r_cos(cosTR,thetaRad)
-		call r_greater(gt,dp,cosTR)
-		if(gt .eq. 1) then
-			call r_getElementFaces(faces,numFaces,elNum)
-			
-			faceNumNds = 0
-			faceNds(:,:) = r_0
-			do i1 = 1, 6
-				i2 = faces(i1,faceNum)
-				if(i2 .ne. 0) then
-					faceNds(:,i1) = locNds(:,i2)
-					faceNumNds = faceNumNds + 1
+		
+		call r_getElementFaces(faces,numFaces,elNum)
+		
+		do faceNum = 1, numFaces
+		    if(elementSurfaces(faceNum,elNum) .eq. 1) then
+				call r_getElSurfaceNormal(elNorm,elNum,faceNum,globNds)
+				
+				dp = elNorm(1)*unitND(1) + elNorm(2)*unitND(2) + elNorm(3)*unitND(3)
+				
+				call r_greater(gt,dp,cosTR)
+				if(gt .eq. 1) then
+					faceNumNds = 0
+					faceNds(:,:) = r_0
+					do i1 = 1, 6
+						i2 = faces(i1,faceNum)
+						if(i2 .ne. 0) then
+							faceNds(:,i1) = locNds(:,i2)
+							faceNumNds = faceNumNds + 1
+						endif
+					enddo
+					
+					if(abs(pressure) .gt. 0d0) then
+						tracFinal(1:3) = -pressure*elNorm(1:3)
+						tracFinal(4:6) = r_0
+					else
+						tracFinal(:) = trac(:)
+					endif
+					
+					if(faceNumNds .eq. 3) then
+						intPts(:,1) = r_1o6*(/r_1,r_1,r_0/)
+						intPts(:,2) = r_1o6*(/4d0,1d0,0d0/)
+						intPts(:,3) = r_1o6*(/1d0,4d0,0d0/)
+						ipWt(1:3) = r_1o6
+						do i1 = 1, 3
+							call r_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),3,3)
+							i3 = numNds*dofPerNd
+							detJ = detJ*ipWt(i1)
+							do i2 = 1, i3
+								i4 = dofTable(1,i2)
+								i5 = dofTable(2,i2)
+								do i6 = 1, 3
+								    i7 = faces(i6,faceNum)
+								    if(i5 .eq. i7) then
+								        ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i6)*detJ
+									endif
+								enddo
+							enddo
+						enddo
+					elseif(faceNumNds .eq. 4) then
+						intPts(:,1) = r_1rt3*(/-r_1,-r_1,r_0/)
+						intPts(:,2) = r_1rt3*(/r_1,-r_1,r_0/)
+						intPts(:,3) = r_1rt3*(/-r_1,r_1,r_0/)
+						intPts(:,4) = r_1rt3*(/r_1,r_1,r_0/)
+						ipWt(1:4) = r_1
+						do i1 = 1, 4
+							call r_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),41,4)
+							i3 = numNds*dofPerNd
+							detJ = detJ*ipWt(i1)
+							do i2 = 1, i3
+								i4 = dofTable(1,i2)
+								i5 = dofTable(2,i2)
+								do i6 = 1, 4
+								    i7 = faces(i6,faceNum)
+								    if(i5 .eq. i7) then
+								        ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i6)*detJ
+									endif
+								enddo
+							enddo
+						enddo	
+					endif
+					
 				endif
-			enddo
-			
-			if(abs(pressure) .gt. 0d0) then
-			    tracFinal(1:3) = -pressure*elNorm(1:3)
-				tracFinal(4:6) = r_0
-			else
-			    tracFinal(:) = trac(:)
 			endif
-			
-			if(faceNumNds .eq. 3) then
-				intPts(:,1) = r_1o6*(/r_1,r_1,r_0/)
-				intPts(:,2) = r_1o6*(/4d0,1d0,0d0/)
-				intPts(:,3) = r_1o6*(/1d0,4d0,0d0/)
-				ipWt(1:3) = r_1o6
-				do i1 = 1, 3
-					call r_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),3,3)
-					i3 = numNds*dofPerNd
-					detJ = detJ*ipWt(i1)
-					do i2 = 1, i3
-						i4 = dofTable(1,i2)
-						i5 = dofTable(2,i2)
-						ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i5)*detJ
-					enddo
-				enddo
-			elseif(faceNumNds .eq. 4) then
-				intPts(:,1) = r_1rt3*(/-r_1,-r_1,r_0/)
-				intPts(:,2) = r_1rt3*(/r_1,-r_1,r_0/)
-				intPts(:,3) = r_1rt3*(/-r_1,r_1,r_0/)
-				intPts(:,4) = r_1rt3*(/r_1,r_1,r_0/)
-				ipWt(1:4) = r_1
-				do i1 = 1, 4
-					call r_getIntPtData(Nvec,Nx,detJ,faceNds,intPts(:,i1),41,4)
-					i3 = numNds*dofPerNd
-					detJ = detJ*ipWt(i1)
-					do i2 = 1, i3
-						i4 = dofTable(1,i2)
-						i5 = dofTable(2,i2)
-						ndFrc(i2) = ndFrc(i2) + tracFinal(i4)*Nvec(i5)*detJ
-					enddo
-				enddo	
-			endif
-			
-		endif
+		enddo
 	
 	end subroutine r_getElSurfaceTraction
 	

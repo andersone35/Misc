@@ -62,8 +62,8 @@ program AStrO_runJob
 				i2 = index(commandString,'*readModelInput')
 				if(i2 .gt. 0) then
 				    readModel = 1
-					!outputFileName = 'modelInputEcho.txt'
-					!call writeModelData(outputFileName)
+					outputFileName = 'modelInputEcho.txt'
+					call writeModelData(outputFileName)
 				endif
 				i2 = index(commandString,'*readDesignVarInput')
 				if(i2 .gt. 0) then
@@ -205,9 +205,11 @@ program AStrO_runJob
 					 solverMaxBW = 6*numNodes
 				endif
 				write(lfUnit,*) 'calling solve'
+				write(*,*) 'calling solve'
                 call solve()
 114             numNodes = numNodes
             elseif(fileLine(i1:i1+13) .eq. '*modalAnalysis') then
+			    write(*,*) 'running modal analysis'
 			    write(lfUnit,*) 'running modal analysis'
 				solverMeth = 'direct'
 				solverBlockDim = numNodes
@@ -360,10 +362,12 @@ program AStrO_runJob
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+16) .eq. '*writeNodeResults' .or. fileLine(i1:i1+19) .eq. '*writeElementResults') then
 			    write(lfUnit,*) 'writing node results'
+				write(*,*) 'writing node/element results'
                 call processWriteNodeEl(8,fileLine,iosVal)
                 i1 = index(fileLine,'*')
             elseif(fileLine(i1:i1+17) .eq. '*writeModalResults') then
 			    write(lfUnit,*) 'writing modal results'
+				write(*,*) 'writing modal results'
                 writeModes = 1
                 read(8,'(A)',iostat=iosVal) fileLine(16:256)
                 i1 = index(fileLine,'*')

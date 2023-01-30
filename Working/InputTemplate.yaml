@@ -98,20 +98,21 @@ loads:
       ##or
       activeTime: start
       setLoads:
+          ## nodal
           - [nd,fx,fy,fz,mx,my,mz,Q]
-          ## or
+          ## bodyForce
           - [el,fx,fy,fz,mx,my,mz,Q]
-          ## or
+          ## gravitational
           - [el,ax,ay,az]
-          ## or
+          ## centrifugal
           - [el,cx,cy,cz,rax,ray,raz,omega]
-          ## or
+          ## surfacePressure
           - [el,nx,ny,nz,thetaTol,p]
-          ## or
+          ## surfaceTraction
           - [el,nx,ny,nz,thetaTol,tx,ty,tz]
-          ## or
+          ## bodyHeatGen
           - [el,Q]
-          ## or
+          ## surfaceFlux
           - [el,nx,ny,nz,thetaTol,f]
           
 ## Alternative loads
